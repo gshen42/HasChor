@@ -1,0 +1,42 @@
+cabal-version:      2.4
+name:               HasChor
+version:            0.1.0.0
+synopsis:           Choreographic programming in Haskell
+-- A longer description of the package.
+-- description:
+license:            BSD-3-Clause
+license-file:       LICENSE
+author:             Gan Shen
+maintainer:         Gan Shen <gan_shen@icloud.com>
+copyright:          (c) Gan Shen 2022
+category:           Concurrency
+-- A URL where users can report bugs.
+-- bug-reports:
+tested-with:
+   GHC == 9.2.4
+
+library
+    hs-source-dirs:   src
+    exposed-modules:  Choreography.Choreo
+                    , Choreography.Control
+                    , Choreography.Location
+    -- Modules included in this library but not exported.
+    -- other-modules:
+    default-language: GHC2021
+
+    build-depends:    async ^>= 2.2.4
+                    , base ^>= 4.16.3.0
+                    , hashable ^>= 1.4.0.2
+                    , transformers ^>= 0.5.6.2
+                    , unordered-containers ^>= 0.2.19.1
+
+
+executable HasChor
+    hs-source-dirs:   app
+    main-is:          Main.hs
+    default-language: GHC2021
+
+    build-depends:    async ^>= 2.2.4
+                    , base ^>= 4.16.3.0
+                    , time ^>= 1.11.1
+                    , HasChor
