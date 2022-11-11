@@ -5,7 +5,7 @@ import Data.String (IsString (..))
 import GHC.Generics (Generic)
 
 newtype Location = Location String
-    deriving (Eq, Ord, Generic)
+    deriving (Eq, Ord, Show, Generic)
 
 instance Hashable Location
 

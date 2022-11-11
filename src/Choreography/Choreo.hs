@@ -1,6 +1,7 @@
-{-# LANGUAGE OverloadedStrings #-}
-
-module Choreography.Choreo where
+--------------------------------------------------------------------------------
+-- Monads for writing choreographies.
+--------------------------------------------------------------------------------
+module Choreography.Choreo (Choreo, comm, epp) where
 
 import Choreography.Control
 import Choreography.Location
@@ -30,45 +31,9 @@ runChoreo (Comm x s r k) = runChoreo (k x)
 comm :: (Show x, Read x) => x -> Location -> Location -> Choreo x
 comm x s r = Comm x s r Pure
 
-price :: String -> Int
-price "Types and Programming Languages" = 80
-price "Homotopy Type Theory"            = 120
-
-budget :: Int
-budget = 100
-
-type Date = Int
-
-deliveryDate :: String -> Date
-deliveryDate "Types and Programming Languages" = 1219
-deliveryDate "Homotopy Type Theory"            = 1010
-
-foo :: Choreo (Maybe Date)
-foo = do
-    title <- comm "Types and Programming Languages" "Buyer" "Seller"
-    price <- comm (price title) "Seller" "Buyer"
-    if price < budget
-    then do
-        date <- comm (deliveryDate title) "Seller" "Buyer"
-        return (Just date)
-    else do
-        return Nothing
-
 epp :: Choreo a -> Location -> Control a
 epp (Comm x s r k) l
     | l == s    = send x r >> epp (k x) l
     | l == r    = recv s >>= \r -> epp (k r) l
     | otherwise = epp (k x) l
 epp (Pure a) l = return a
-
-
-example :: IO ()
-example = do
-    let buyer  = epp foo "Buyer"
-        seller = epp foo "Seller"
-    bufs <- newEmptyMsgBufs ["Buyer", "Seller"]
-    async1 <- runControl bufs "Buyer" buyer
-    async2 <- runControl bufs "Seller" seller
-    result1 <- wait async1
-    result2 <- wait async2
-    print result1

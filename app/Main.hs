@@ -1,50 +1,72 @@
-{-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Main where
 
+import Choreography.Choreo
 import Choreography.Control
-import Data.Time ( fromGregorian, Day )
-import Control.Concurrent.Async (wait)
+import Choreography.Location
+import Data.Time
 
-buyerGen :: String -> Int -> Control (Maybe Day)
-buyerGen title budget = do
-    send title "seller"
-    (price :: Int) <- recv "seller"
-    if price <= budget
-    then do
-        send True "seller"
-        delivery_date <- recv "seller"
-        return (Just delivery_date)
-    else do
-        send False "seller"
-        return Nothing
-
-sellerGen :: (String -> Int) -> (String -> Day) -> Control ()
-sellerGen price delivery_date = do
-    title <- recv "buyer"
-    send (price title) "buyer"
-    decision <- recv "buyer"
-    if decision
-    then do
-        send (delivery_date title) "buyer"
-    else do
-        return ()
-
-bookseller :: IO ()
-bookseller = do
-    bufs <- newEmptyMsgBufs ["buyer", "seller"]
-    async1 <- runControl bufs "buyer" buyer
-    async2 <- runControl bufs "seller" seller
-    result1 <- wait async1
-    result2 <- wait async2
-    print result1
+controlExample :: IO [(Location, Maybe Day)]
+controlExample = runControl [("buyer", buyer), ("seller", seller)]
     where
-        buyer = buyerGen "Types and Programming Languages" 100
-        seller = sellerGen (\case "Types and Programming Languages" -> 80;
-                                  "Homotopy Type Theory" -> 120)
-                           (\case "Types and Programming Languages" -> (fromGregorian 2022 12 19)
-                                  "Homotopy Type theory" -> (fromGregorian 2023 1 1))
+        buyer :: Control (Maybe Day)
+        buyer = do
+            send title "seller"
+            price <- recv "seller"
+            if price <= budget
+            then do
+                send True "seller"
+                date <- recv "seller"
+                return (Just date)
+            else do
+                send False "seller"
+                return Nothing
+
+        seller :: Control (Maybe Day)
+        seller = do
+            title <- recv "buyer"
+            send (price title) "buyer"
+            decision <- recv "buyer"
+            if decision
+            then do
+                send (deliveryDate title) "buyer"
+                return Nothing
+            else do
+                return Nothing
+
+choreoExample :: IO [(Location, Maybe Day)]
+choreoExample = do
+    let buyer  = epp choreo "buyer"
+        seller = epp choreo "seller"
+    runControl [("buyer", buyer), ("seller", seller)]
+    where
+        choreo :: Choreo (Maybe Day)
+        choreo = do
+            t <- comm title "buyer" "seller"
+            p <- comm (price t) "seller" "buyer"
+            if p < budget
+            then do
+                d <- comm (deliveryDate t) "seller" "buyer"
+                return (Just d)
+            else do
+                return Nothing
+
+title :: String
+title  = "Types and Programming Languages"
+
+budget :: Int
+budget = 100
+
+price :: String -> Int
+price "Types and Programming Languages" = 80
+price "Homotopy Type Theory"            = 120
+
+deliveryDate :: String -> Day
+deliveryDate "Types and Programming Languages" = fromGregorian 2022 12 19
+deliveryDate "Homotopy Type Theory"            = fromGregorian 2023 01 01
 
 main :: IO ()
-main = bookseller
+main = do
+    result <- choreoExample
+    print result

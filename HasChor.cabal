@@ -36,7 +36,6 @@ executable HasChor
     main-is:          Main.hs
     default-language: GHC2021
 
-    build-depends:    async ^>= 2.2.4
-                    , base ^>= 4.16.3.0
+    build-depends:    base ^>= 4.16.3.0
                     , time ^>= 1.11.1
                     , HasChor

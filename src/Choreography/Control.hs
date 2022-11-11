@@ -10,12 +10,12 @@ import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Reader (ReaderT, ask, runReaderT)
 import Data.HashMap.Strict (HashMap, (!))
 import Data.HashMap.Strict qualified as HashMap
-import Control.Concurrent.Async (Async, async)
-
-type MsgBuf = HashMap Location (Chan String)
+import Control.Concurrent.Async (Async, async, wait)
 
 -- Each location is associated with a message buffer which stores messages sent
 -- from other locations.
+type MsgBuf = HashMap Location (Chan String)
+
 type MsgBufs = HashMap Location MsgBuf
 
 type Control = ReaderT (MsgBufs, Location) IO
@@ -34,20 +34,25 @@ recv loc = do
 
 -- TODO: Simplify and factor common pattern out of `newEmptyMsgBuf` and
 -- `newEmptyMsgBufs`.
-
 newEmptyMsgBuf :: [Location] -> IO MsgBuf
 newEmptyMsgBuf = foldM f HashMap.empty
-  where
-    f hash loc = do
-        chan <- newChan
-        return (HashMap.insert loc chan hash)
+    where
+        f hash loc = do
+            chan <- newChan
+            return (HashMap.insert loc chan hash)
 
 newEmptyMsgBufs :: [Location] -> IO MsgBufs
 newEmptyMsgBufs locs = foldM f HashMap.empty locs
-  where
-    f hash loc = do
-        buf <- newEmptyMsgBuf locs
-        return (HashMap.insert loc buf hash)
+    where
+        f hash loc = do
+            buf <- newEmptyMsgBuf locs
+            return (HashMap.insert loc buf hash)
 
-runControl :: MsgBufs -> Location -> Control a -> IO (Async a)
-runControl bufs loc prog = async $ runReaderT prog (bufs, loc)
+-- TODO: allow control programs to return values of different types.
+runControl :: [(Location, Control a)] -> IO [(Location, a)]
+runControl l = do
+    let locs = map fst l
+    bufs    <- newEmptyMsgBufs locs
+    asyncs  <- mapM (\(loc, prog) -> async (runReaderT prog (bufs, loc))) l
+    results <- mapM wait asyncs
+    return (zip locs results)
