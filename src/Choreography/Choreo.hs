@@ -17,12 +17,11 @@ instance Functor Choreo where
 
 instance Applicative Choreo where
     pure = Pure
-
     f <*> x = f >>= \f -> x >>= \x -> return (f x)
 
 instance Monad Choreo where
     (Pure a)       >>= f = f a
-    (Comm x s r k) >>= f = k x >>= f
+    (Comm x s r k) >>= f = Comm x s r (\x -> k x >>= f)
 
 runChoreo :: Choreo a -> a
 runChoreo (Pure a)     = a
