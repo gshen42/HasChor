@@ -2,40 +2,54 @@ cabal-version:      2.4
 name:               HasChor
 version:            0.1.0.0
 synopsis:           Choreographic programming in Haskell
--- A longer description of the package.
--- description:
 license:            BSD-3-Clause
 license-file:       LICENSE
 author:             Gan Shen
 maintainer:         Gan Shen <gan_shen@icloud.com>
 copyright:          (c) Gan Shen 2022
 category:           Concurrency
--- A URL where users can report bugs.
--- bug-reports:
 tested-with:
-   GHC == 9.2.4
+   GHC == 9.2.5
 
 library
     hs-source-dirs:   src
-    exposed-modules:  Choreography.Choreo
-                    , Choreography.Control
-                    , Choreography.Location
-    -- Modules included in this library but not exported.
-    -- other-modules:
     default-language: GHC2021
-
-    build-depends:    async ^>= 2.2.4
-                    , base ^>= 4.16.3.0
-                    , hashable ^>= 1.4.0.2
-                    , transformers ^>= 0.5.6.2
-                    , unordered-containers ^>= 0.2.19.1
-
+    exposed-modules:
+        Choreography.Choreo,
+        Choreography.Control,
+        Choreography.Location,
+        Choreography.Network,
+        Choreography.Network.Http
+    other-modules:
+        Control.Monad.Freer
+    build-depends:
+        async ^>= 2.2.4,
+        base ^>= 4.16.3.0,
+        bytestring ^>= 0.11.4.0,
+        hashable ^>= 1.4.0.2,
+        http-client ^>= 0.7.10,
+        servant ^>= 0.19.1,
+        servant-client ^>= 0.19,
+        servant-server ^>= 0.19.2,
+        transformers ^>= 0.5.6.2,
+        text ^>= 1.2.5.0,
+        unordered-containers ^>= 0.2.19.1,
+        warp ^>= 3.3.23
 
 executable HasChor
     hs-source-dirs:   app
     main-is:          Main.hs
     default-language: GHC2021
+    build-depends:
+        HasChor,
+        base ^>= 4.16.3.0,
+        time ^>= 1.11.1
 
-    build-depends:    base ^>= 4.16.3.0
-                    , time ^>= 1.11.1
-                    , HasChor
+executable network-test
+    hs-source-dirs:    app
+    main-is:           NetworkTest.hs
+    default-language:  GHC2021
+    build-depends:
+        HasChor,
+        base ^>= 4.16.3,
+        time ^>= 1.11.1
