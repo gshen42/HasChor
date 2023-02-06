@@ -47,6 +47,8 @@ mkConfig = Config . HashMap.fromList . fmap (fmap f)
 runNetwork :: Config -> Location -> Network a -> IO a
 runNetwork cfg self prog = do
   ctx <- mkContext (HashMap.keys $ locToUrl cfg)
+  -- TODO: kill the threads when the main thread exits
+  -- use `bracket` or `withAsync`
   forkIO $ sendThread cfg ctx
   forkIO $ recvThread cfg ctx
   interpNetwork ctx prog
