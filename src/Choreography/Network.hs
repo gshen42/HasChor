@@ -19,12 +19,11 @@ data NetworkF a where
 
 type Network = Freer NetworkF
 
--- TODO: factor out the common pattern in `send` and `recv`
 send :: Show a => a -> Location -> Network ()
-send a l = Do (Send a l) Pure
+send a l = Do (Send a l) Return
 
 recv :: Read a => Location -> Network a
-recv l = Do (Recv l) Pure
+recv l = Do (Recv l) Return
 
 data Context = Context
   { sendChan :: Chan (Location, String)
@@ -48,7 +47,7 @@ mkContext ls = do
 -- us to have multiple implementations of `Network` while reusing most of the
 -- code
 interpNetwork :: Context -> Network a -> IO a
-interpNetwork ctx = interpFreer f
+interpNetwork ctx = runFreer f
   where
     f :: NetworkF a -> IO a
     f (Send a l) = writeChan (sendChan ctx) (l, show a)
