@@ -17,13 +17,16 @@ data NetworkF a where
   Send :: Show a => a -> Location -> NetworkF ()
   Recv :: Read a => Location -> NetworkF a
 
-type Network = Freer NetworkF
+type Network = Freer (IO :+: NetworkF)
 
 send :: Show a => a -> Location -> Network ()
-send a l = Do (Send a l) Return
+send a l = toFreer $ Inr (Send a l)
 
 recv :: Read a => Location -> Network a
-recv l = Do (Recv l) Return
+recv l = toFreer $ Inr (Recv l)
+
+doIO :: IO a -> Network a
+doIO io = toFreer $ Inl io
 
 data Context = Context
   { sendChan :: Chan (Location, String)
@@ -49,6 +52,7 @@ mkContext ls = do
 interpNetwork :: Context -> Network a -> IO a
 interpNetwork ctx = runFreer f
   where
-    f :: NetworkF a -> IO a
-    f (Send a l) = writeChan (sendChan ctx) (l, show a)
-    f (Recv l)   = read <$> readChan (recvChans ctx ! l)
+    f :: (IO :+: NetworkF) a -> IO a
+    f (Inl io)         = io
+    f (Inr (Send a l)) = writeChan (sendChan ctx) (l, show a)
+    f (Inr (Recv l))   = read <$> readChan (recvChans ctx ! l)

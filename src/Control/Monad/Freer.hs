@@ -31,3 +31,8 @@ toFreer eff = Do eff Return
 runFreer :: Monad g => (forall a. f a -> g a) -> Freer f a -> g a
 runFreer f (Return a) = return a
 runFreer f (Do eff k) = f eff >>= runFreer f . k
+
+-- Sum of functors
+data (f :+: g) a where
+  Inl :: f a -> (f :+: g) a
+  Inr :: g a -> (f :+: g) a
