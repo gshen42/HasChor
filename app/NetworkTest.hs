@@ -32,7 +32,7 @@ main = do
   d <- runNetwork cfg "buyer" buyer
   print d
   where
-    buyer :: Network (Maybe Day)
+    buyer :: Network IO (Maybe Day)
     buyer = do
       send title "seller"
       price <- recv "seller"
@@ -45,7 +45,7 @@ main = do
         send False "seller"
         return Nothing
 
-    seller :: Network ()
+    seller :: Network IO ()
     seller = do
       title <- recv "buyer"
       send (price title) "buyer"

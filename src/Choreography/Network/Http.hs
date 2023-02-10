@@ -14,7 +14,7 @@ import Servant.Client (ClientM, client, runClientM, BaseUrl(..), mkClientEnv, Sc
 import Servant.Server (Handler, Server, serve)
 import Control.Concurrent (forkIO)
 import Control.Concurrent.Chan (writeChan, readChan)
-import Control.Monad.IO.Class (liftIO)
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import Network.Wai.Handler.Warp (run)
 import Control.Monad ((>=>))
 
@@ -44,14 +44,14 @@ mkConfig = Config . HashMap.fromList . fmap (fmap f)
       , baseUrlPath = ""
       }
 
-runNetwork :: Config -> Location -> Network a -> IO a
+runNetwork :: MonadIO m => Config -> Location -> Network m a -> m a
 runNetwork cfg self prog = do
-  ctx <- mkContext (HashMap.keys $ locToUrl cfg)
+  ctx <- liftIO $ mkContext (HashMap.keys $ locToUrl cfg)
   -- TODO: kill the threads when the main thread exits
   -- use `bracket` or `withAsync`
-  forkIO $ sendThread cfg ctx
-  forkIO $ recvThread cfg ctx
-  interpNetwork ctx prog
+  liftIO $ forkIO (sendThread cfg ctx)
+  liftIO $ forkIO (recvThread cfg ctx)
+  runNetworkMain ctx prog
   where
     api :: Proxy API
     api = Proxy

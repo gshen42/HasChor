@@ -10,23 +10,25 @@ module Choreography.Network where
 import Choreography.Location
 import Control.Concurrent.Chan
 import Data.HashMap.Strict (HashMap, (!), insert, empty)
-import Control.Monad (foldM)
+import Control.Monad
 import Control.Monad.Freer
+import Control.Monad.IO.Class
 
-data NetworkF a where
-  Send :: Show a => a -> Location -> NetworkF ()
-  Recv :: Read a => Location -> NetworkF a
+data NetworkSig m a where
+  Loca :: m a -> NetworkSig m a
+  Send :: Show a => a -> Location -> NetworkSig m ()
+  Recv :: Read a => Location -> NetworkSig m a
 
-type Network = Freer (IO :+: NetworkF)
+type Network m = Freer (NetworkSig m)
 
-send :: Show a => a -> Location -> Network ()
-send a l = toFreer $ Inr (Send a l)
+loca :: m a -> Network m a
+loca m = toFreer $ (Loca m)
 
-recv :: Read a => Location -> Network a
-recv l = toFreer $ Inr (Recv l)
+send :: Show a => a -> Location -> Network m ()
+send a l = toFreer $ Send a l
 
-doIO :: IO a -> Network a
-doIO io = toFreer $ Inl io
+recv :: Read a => Location -> Network m a
+recv l = toFreer $ Recv l
 
 data Context = Context
   { sendChan :: Chan (Location, String)
@@ -49,10 +51,10 @@ mkContext ls = do
 -- how `Context` is manipulated is determined in the next phase, this allows
 -- us to have multiple implementations of `Network` while reusing most of the
 -- code
-interpNetwork :: Context -> Network a -> IO a
-interpNetwork ctx = runFreer f
+runNetworkMain :: MonadIO m => Context -> Network m a -> m a
+runNetworkMain ctx = runFreer alg
   where
-    f :: (IO :+: NetworkF) a -> IO a
-    f (Inl io)         = io
-    f (Inr (Send a l)) = writeChan (sendChan ctx) (l, show a)
-    f (Inr (Recv l))   = read <$> readChan (recvChans ctx ! l)
+    alg :: MonadIO m => NetworkSig m a -> m a
+    alg (Loca m)   = m
+    alg (Send a l) = liftIO $ writeChan (sendChan ctx) (l, show a)
+    alg (Recv l)   = liftIO $ read <$> readChan (recvChans ctx ! l)
