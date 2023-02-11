@@ -18,22 +18,16 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Network.Wai.Handler.Warp (run)
 import Control.Monad ((>=>))
 
-type API = "send" :> Capture "from" Location :> ReqBody '[PlainText] String :> PostNoContent
-
-instance ToHttpApiData Location where
-  toUrlPiece (Location s) = toUrlPiece s
-
-instance FromHttpApiData Location where
-  parseUrlPiece = parseUrlPiece >=> (return . Location)
+type API = "send" :> Capture "from" LocTm :> ReqBody '[PlainText] String :> PostNoContent
 
 data Config = Config
-  { locToUrl :: HashMap Location BaseUrl
+  { locToUrl :: HashMap LocTm BaseUrl
   }
 
 type Host = String
 type Port = Int
 
-mkConfig :: [(Location, (Host, Port))] -> Config
+mkConfig :: [(LocTm, (Host, Port))] -> Config
 mkConfig = Config . HashMap.fromList . fmap (fmap f)
   where
     f :: (Host, Port) -> BaseUrl
@@ -44,7 +38,7 @@ mkConfig = Config . HashMap.fromList . fmap (fmap f)
       , baseUrlPath = ""
       }
 
-runNetwork :: MonadIO m => Config -> Location -> Network m a -> m a
+runNetwork :: MonadIO m => Config -> LocTm -> Network m a -> m a
 runNetwork cfg self prog = do
   ctx <- liftIO $ mkContext (HashMap.keys $ locToUrl cfg)
   -- TODO: kill the threads when the main thread exits
@@ -56,7 +50,7 @@ runNetwork cfg self prog = do
     api :: Proxy API
     api = Proxy
 
-    send :: Location -> String -> ClientM NoContent
+    send :: LocTm -> String -> ClientM NoContent
     send = client api
 
     sendThread :: Config -> Context -> IO ()
@@ -71,7 +65,7 @@ runNetwork cfg self prog = do
     server :: Context -> Server API
     server ctx = handler
       where
-        handler :: Location -> String -> Handler NoContent
+        handler :: LocTm -> String -> Handler NoContent
         handler rmt msg = do
           liftIO $ writeChan (recvChans ctx ! rmt) msg
           return NoContent

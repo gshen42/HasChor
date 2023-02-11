@@ -16,33 +16,33 @@ import Control.Monad.IO.Class
 
 data NetworkSig m a where
   Loca :: m a -> NetworkSig m a
-  Send :: Show a => a -> Location -> NetworkSig m ()
-  Recv :: Read a => Location -> NetworkSig m a
+  Send :: Show a => a -> Location l -> NetworkSig m ()
+  Recv :: Read a => Location l -> NetworkSig m a
 
 type Network m = Freer (NetworkSig m)
 
 loca :: m a -> Network m a
 loca m = toFreer $ (Loca m)
 
-send :: Show a => a -> Location -> Network m ()
+send :: Show a => a -> Location l -> Network m ()
 send a l = toFreer $ Send a l
 
-recv :: Read a => Location -> Network m a
+recv :: Read a => Location l -> Network m a
 recv l = toFreer $ Recv l
 
-data Context = Context
-  { sendChan :: Chan (Location, String)
-  , recvChans :: HashMap Location (Chan String)
+data Context = forall l. Context
+  { sendChan :: Chan (LocTm, String)
+  , recvChans :: HashMap LocTm (Chan String)
   }
 
-mkContext :: [Location] -> IO Context
+mkContext :: [LocTm] -> IO Context
 mkContext ls = do
   recvChans <- foldM f empty ls
   sendChan <- newChan
   return $ Context { recvChans = recvChans, sendChan = sendChan }
   where
-    f :: HashMap Location (Chan String) -> Location
-      -> IO (HashMap Location (Chan String))
+    f :: HashMap LocTm (Chan String) -> LocTm
+      -> IO (HashMap LocTm (Chan String))
     f hm l = do
       c <- newChan
       return $ insert l c hm
@@ -56,5 +56,5 @@ runNetworkMain ctx = runFreer alg
   where
     alg :: MonadIO m => NetworkSig m a -> m a
     alg (Loca m)   = m
-    alg (Send a l) = liftIO $ writeChan (sendChan ctx) (l, show a)
-    alg (Recv l)   = liftIO $ read <$> readChan (recvChans ctx ! l)
+    alg (Send a l) = liftIO $ writeChan (sendChan ctx) (toLocTm l, show a)
+    alg (Recv l)   = liftIO $ read <$> readChan (recvChans ctx ! toLocTm l)
