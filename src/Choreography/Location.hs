@@ -15,10 +15,17 @@ type LocTy = Symbol
 -- and *it is the user's responsibility to ensure they are the same*
 -- ^ TODO: make a template haskell function that guarantee this by construction
 data Location (l :: LocTy) = Location LocTm
-  deriving (Eq, Ord)
 
 toLocTm :: Location l -> LocTm
 toLocTm (Location l) = l
 
 instance IsString (Location l) where
   fromString = Location
+
+newtype a @ (l :: LocTy) = Wrap a
+
+wrap :: a -> a @ l
+wrap = Wrap
+
+unwrap :: a @ l -> a
+unwrap (Wrap a) = a

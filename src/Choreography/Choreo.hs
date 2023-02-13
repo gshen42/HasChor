@@ -1,5 +1,4 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE GADTs     #-}
+{-# LANGUAGE GADTs #-}
 
 --------------------------------------------------------------------------------
 -- Monads for writing choreographies.
@@ -8,17 +7,8 @@
 module Choreography.Choreo where
 
 import Choreography.Location
+import Choreography.Network
 import Control.Monad.Freer
-import Data.Proxy
-import GHC.TypeLits
-
-newtype a @ (l :: Symbol) = Wrap a
-
-wrap :: a -> a @ l
-wrap = Wrap
-
-unwrap :: a @ l -> a
-unwrap (Wrap a) = a
 
 type Unwrap l = forall a. a @ l -> a
 
@@ -26,16 +16,16 @@ type Unwrap l = forall a. a @ l -> a
 -- needs -XDatatypeContexts and is considered a bad practice, why? also it
 -- doens't work with GADT
 data ChoreoSig m a where
-  Local :: Proxy l -> (Unwrap l -> m a) -> ChoreoSig m (a @ l)
-  Comm  :: Proxy l -> a @ l -> Proxy l' -> ChoreoSig m (a @ l')
+  Local :: Location l -> (Unwrap l -> m a) -> ChoreoSig m (a @ l)
+  Comm  :: (Show a, Read a) => Location l -> a @ l -> Location l' -> ChoreoSig m (a @ l')
   -- ^ TODO: ensure l and l' are different
 
 type Choreo m = Freer (ChoreoSig m)
 
-locallyDo :: Proxy l -> (Unwrap l -> m a) -> Choreo m (a @ l)
+locallyDo :: Location l -> (Unwrap l -> m a) -> Choreo m (a @ l)
 locallyDo l m = toFreer (Local l m)
 
-(~>) :: (Proxy l, a @ l) -> Proxy l' -> Choreo m (a @ l')
+(~>) :: (Show a, Read a) => (Location l, a @ l) -> Location l' -> Choreo m (a @ l')
 (~>) (l, a) l' = toFreer (Comm l a l')
 
 runChoreo :: Monad m => Choreo m a -> m a
@@ -45,9 +35,15 @@ runChoreo = runFreer alg
     alg (Local _ m)   = wrap <$> m unwrap
     alg (Comm _ a _ ) = return $ (wrap . unwrap) a
 
--- epp :: Choreo a -> Location -> Control a
--- epp (Comm x s r k) l
---     | l == s    = send x r >> epp (k x) l
---     | l == r    = recv s >>= \r -> epp (k r) l
---     | otherwise = epp (k x) l
--- epp (Pure a) l = return a
+-- TODO: use type family to precisely specify the return type of `Network`
+-- TODO: is it possible to define `epp` in terms of `runFreer`
+-- TODO: use a proper exception instead of `undefined` to indicate data ownership
+epp :: Choreo m a -> Location l -> Network m ()
+epp (Return a) l = return ()
+epp (Do (Local l m) k) l'
+  | toLocTm l == toLocTm l' = loca (m unwrap) >>= \x -> epp (k (wrap x)) l
+  | otherwise               = epp (k undefined) l
+epp (Do (Comm s a r) k) l
+  | toLocTm s == toLocTm l = send (unwrap a) r >> epp (k undefined) l
+  | toLocTm r == toLocTm l = recv s >>= \x -> epp (k (wrap x)) l
+  | otherwise              = epp (k undefined) l
