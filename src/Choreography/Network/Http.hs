@@ -3,7 +3,7 @@
 module Choreography.Network.Http where
 
 import Choreography.Location
-import Choreography.Network
+import Choreography.Network hiding (run)
 import Data.ByteString (fromStrict)
 import Data.Proxy (Proxy(..))
 import Data.HashMap.Strict (HashMap, (!))
@@ -41,12 +41,14 @@ mkConfig = Config . HashMap.fromList . fmap (fmap f)
 runNetwork :: MonadIO m => Config -> LocTm -> Network m a -> m a
 runNetwork cfg self prog = do
   ctx <- liftIO $ mkContext (HashMap.keys $ locToUrl cfg)
-  -- TODO: kill the threads when the main thread exits
-  -- use `bracket` or `withAsync`
   liftIO $ forkIO (sendThread cfg ctx)
   liftIO $ forkIO (recvThread cfg ctx)
   runNetworkMain ctx prog
+  loop -- TODO: the `loop` here is to ensure the main thread only exits when
+       -- the sending thread has finished sending all the messages
   where
+    loop = loop
+
     api :: Proxy API
     api = Proxy
 
