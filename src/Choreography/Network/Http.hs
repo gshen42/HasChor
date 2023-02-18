@@ -20,15 +20,15 @@ import Control.Monad ((>=>))
 
 type API = "send" :> Capture "from" LocTm :> ReqBody '[PlainText] String :> PostNoContent
 
-data Config = Config
+data HttpConfig = HttpConfig
   { locToUrl :: HashMap LocTm BaseUrl
   }
 
 type Host = String
 type Port = Int
 
-mkConfig :: [(LocTm, (Host, Port))] -> Config
-mkConfig = Config . HashMap.fromList . fmap (fmap f)
+mkHttpConfig :: [(LocTm, (Host, Port))] -> HttpConfig
+mkHttpConfig = HttpConfig . HashMap.fromList . fmap (fmap f)
   where
     f :: (Host, Port) -> BaseUrl
     f (host, port) = BaseUrl
@@ -38,8 +38,8 @@ mkConfig = Config . HashMap.fromList . fmap (fmap f)
       , baseUrlPath = ""
       }
 
-runNetwork :: MonadIO m => Config -> LocTm -> Network m a -> m a
-runNetwork cfg self prog = do
+runNetworkHttp :: MonadIO m => HttpConfig -> LocTm -> Network m a -> m a
+runNetworkHttp cfg self prog = do
   ctx <- liftIO $ mkContext (HashMap.keys $ locToUrl cfg)
   liftIO $ forkIO (sendThread cfg ctx)
   liftIO $ forkIO (recvThread cfg ctx)
@@ -55,7 +55,7 @@ runNetwork cfg self prog = do
     send :: LocTm -> String -> ClientM NoContent
     send = client api
 
-    sendThread :: Config -> Context -> IO ()
+    sendThread :: HttpConfig -> Context -> IO ()
     sendThread cfg ctx = do
       mgr <- newManager defaultManagerSettings
       (rmt, msg) <- readChan (sendChan ctx)
@@ -72,8 +72,8 @@ runNetwork cfg self prog = do
           liftIO $ writeChan (recvChans ctx ! rmt) msg
           return NoContent
 
-    recvThread :: Config -> Context -> IO ()
+    recvThread :: HttpConfig -> Context -> IO ()
     recvThread cfg ctx = run (baseUrlPort $ locToUrl cfg ! self ) (serve api $ server ctx)
 
-instance Backend Config where
-  runNetwork = Choreography.Network.Http.runNetwork
+instance Backend HttpConfig where
+  runNetwork = runNetworkHttp

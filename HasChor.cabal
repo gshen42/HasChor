@@ -15,6 +15,7 @@ library
     hs-source-dirs:   src
     default-language: GHC2021
     exposed-modules:
+        Choreography
         Choreography.Choreo,
         Choreography.Location,
         Choreography.Network,
