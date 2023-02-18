@@ -74,3 +74,6 @@ runNetwork cfg self prog = do
 
     recvThread :: Config -> Context -> IO ()
     recvThread cfg ctx = run (baseUrlPort $ locToUrl cfg ! self ) (serve api $ server ctx)
+
+instance Backend Config where
+  runNetwork = Choreography.Network.Http.runNetwork

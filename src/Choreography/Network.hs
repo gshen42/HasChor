@@ -67,3 +67,6 @@ runNetworkMain ctx = runFreer alg
     alg (Send a l) = liftIO $ writeChan (sendChan ctx) (l, show a)
     alg (Recv l)   = liftIO $ read <$> readChan (recvChans ctx ! l)
     alg (BCast a)  = mapM_ alg $ fmap (Send a) (locs ctx)
+
+class Backend c where
+  runNetwork :: MonadIO m => c -> LocTm -> Network m a -> m a
