@@ -13,9 +13,12 @@ module Choreography
   , Proxy(..)
 
   , Choreo
-  , locallyDo
+  , locally
+  , comm
   , (~>)
+  , (~~>)
   , cond
+  , cond'
   , runChoreo
 
   , Host

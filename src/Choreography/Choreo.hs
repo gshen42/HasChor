@@ -1,4 +1,5 @@
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE GADTs              #-}
+{-# LANGUAGE ImpredicativeTypes #-}
 
 --------------------------------------------------------------------------------
 -- Monads for writing choreographies.
@@ -28,18 +29,6 @@ data ChoreoSig m a where
 
 type Choreo m = Freer (ChoreoSig m)
 
-locallyDo :: (KnownSymbol l) =>
-             Proxy l -> (Unwrap l -> m a) -> Choreo m (a @ l)
-locallyDo l m = toFreer (Local l m)
-
-(~>) :: (Show a, Read a, KnownSymbol l, KnownSymbol l') =>
-        (Proxy l, a @ l) -> Proxy l' -> Choreo m (a @ l')
-(~>) (l, a) l' = toFreer (Comm l a l')
-
-cond ::  (Show a, Read a, KnownSymbol l) =>
-         Proxy l -> a @ l -> (a -> Choreo m b) -> Choreo m b
-cond l a c = toFreer (Cond l a c)
-
 runChoreo :: Monad m => Choreo m a -> m a
 runChoreo = runFreer alg
   where
@@ -63,3 +52,32 @@ epp (Do (Comm s a r) k) l
 epp (Do (Cond l a c) k) l'
   | toLocTm l == l' = broadcast (unwrap a) >> epp (c $ unwrap a) l' >>= \x -> epp (k x) l'
   | otherwise       = recv (toLocTm l) >>= \x -> epp (c x) l' >>= \x -> epp (k x) l'
+
+  --------------------------------------------------------------------------------
+  -- `Choreo` operators
+
+locally :: KnownSymbol l =>
+           Proxy l -> (Unwrap l -> m a) -> Choreo m (a @ l)
+locally l m = toFreer (Local l m)
+
+comm :: (Show a, Read a, KnownSymbol l, KnownSymbol l') =>
+        (Proxy l, a @ l) -> Proxy l' -> Choreo m (a @ l')
+comm (l, a) l' = toFreer (Comm l a l')
+
+(~>) (l, a) l' = (l, a) `comm` l'
+
+(~~>) :: (Show a, Read a, KnownSymbol l, KnownSymbol l') =>
+         (Proxy l, Unwrap l -> m a) -> Proxy l' -> Choreo m (a @ l')
+(~~>) (l, m) l' = do
+  x <- l `locally` m
+  (l, x) ~> l'
+
+cond :: (Show a, Read a, KnownSymbol l) =>
+        (Proxy l, a @ l) -> (a -> Choreo m b) -> Choreo m b
+cond (l, a) c = toFreer (Cond l a c)
+
+cond' :: (Show a, Read a, KnownSymbol l) =>
+         (Proxy l, Unwrap l -> m a) -> (a -> Choreo m b) -> Choreo m b
+cond' (l, m) c = do
+  x <- l `locally` m
+  cond (l, x) c
