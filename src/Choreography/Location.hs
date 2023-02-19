@@ -12,23 +12,10 @@ type LocTy = Symbol
 toLocTm :: KnownSymbol l => Proxy l -> LocTm
 toLocTm = symbolVal
 
-data (l :: LocTy) . a = Wrap a
+data a @ (l :: LocTy) = Wrap a
 
-type a @ l = l.a
-
-instance Functor ((.) l) where
-  fmap f (Wrap a) = Wrap $ f a
-
-instance Applicative ((.) l) where
-  pure = Wrap
-
-  (Wrap f) <*> (Wrap a) = Wrap $ f a
-
-instance Monad ((.) l) where
-  (Wrap a) >>= f = f a
-
-wrap :: a -> l.a
+wrap :: a -> a @ l
 wrap = Wrap
 
-unwrap :: l.a -> a
+unwrap :: a @ l-> a
 unwrap (Wrap a) = a
