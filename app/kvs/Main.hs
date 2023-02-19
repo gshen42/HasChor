@@ -73,7 +73,6 @@ kvsServer = do
         s' <- kvs s
         loop s'
    in loop initS
-  kvs initS
   return ()
 
 kvsClient :: Choreo IO ()
