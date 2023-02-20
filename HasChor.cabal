@@ -33,6 +33,16 @@ library
         unordered-containers ^>= 0.2.19.1,
         warp ^>= 3.3.23
 
+executable bank-2pc
+    hs-source-dirs:   app/bank-2pc
+    main-is:          Main.hs
+    default-language: GHC2021
+    build-depends:
+        HasChor,
+        base ^>= 4.16.3.0,
+        time ^>= 1.11.1.1,
+        split ^>= 0.2.3.5
+        
 executable bookseller
     hs-source-dirs:   app/bookseller
     main-is:          Main.hs
