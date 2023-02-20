@@ -26,8 +26,8 @@ module Choreography
   , HttpConfig
   , mkHttpConfig
 
-  , LocalConfig
-  , mkLocalConfig
+--  , LocalConfig
+--  , mkLocalConfig
 
   , runChoreography
   )
