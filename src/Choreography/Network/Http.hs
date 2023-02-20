@@ -41,7 +41,8 @@ mkHttpConfig = HttpConfig . HashMap.fromList . fmap (fmap f)
 runNetworkHttp :: MonadIO m => HttpConfig -> LocTm -> Network m a -> m a
 runNetworkHttp cfg self prog = do
   ctx <- liftIO $ mkContext (HashMap.keys $ locToUrl cfg)
-  liftIO $ forkIO (sendThread cfg ctx)
+  mgr <- liftIO $ newManager defaultManagerSettings
+  liftIO $ forkIO (sendThread mgr cfg ctx)
   liftIO $ forkIO (recvThread cfg ctx)
   runNetworkMain ctx prog
   loop -- TODO: the `loop` here is to ensure the main thread only exits when
@@ -55,14 +56,13 @@ runNetworkHttp cfg self prog = do
     send :: LocTm -> String -> ClientM NoContent
     send = client api
 
-    sendThread :: HttpConfig -> Context -> IO ()
-    sendThread cfg ctx = do
-      mgr <- newManager defaultManagerSettings
+    sendThread :: Manager -> HttpConfig -> Context -> IO ()
+    sendThread mgr cfg ctx = do
       (rmt, msg) <- readChan (sendChan ctx)
       res <- runClientM (send self msg) (mkClientEnv mgr (locToUrl cfg ! rmt))
       case res of
         Left err -> putStrLn $ "Error : " ++ show err
-        Right _ -> sendThread cfg ctx
+        Right _ -> sendThread mgr cfg ctx
 
     server :: Context -> Server API
     server ctx = handler
