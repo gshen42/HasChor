@@ -39,16 +39,15 @@ runChoreo = runFreer alg
 
 -- TODO: use type family to precisely specify the return type of `Network`
 -- TODO: is it possible to define `epp` in terms of `runFreer`
--- TODO: use a proper exception instead of `undefined` to indicate data ownership
 epp :: Choreo m a -> LocTm -> Network m a
 epp (Return a) l = return a
 epp (Do (Local l m) k) l'
   | toLocTm l == l' = run (m unwrap) >>= \x -> epp (k $ wrap x) l'
-  | otherwise       = epp (k undefined) l'
+  | otherwise       = epp (k Empty) l'
 epp (Do (Comm s a r) k) l
-  | toLocTm s == l = send (unwrap a) (toLocTm r) >> epp (k undefined) l
+  | toLocTm s == l = send (unwrap a) (toLocTm r) >> epp (k Empty) l
   | toLocTm r == l = recv (toLocTm s) >>= \x -> epp (k (wrap x)) l
-  | otherwise      = epp (k undefined) l
+  | otherwise      = epp (k Empty) l
 epp (Do (Cond l a c) k) l'
   | toLocTm l == l' = broadcast (unwrap a) >> epp (c $ unwrap a) l' >>= \x -> epp (k x) l'
   | otherwise       = recv (toLocTm l) >>= \x -> epp (c x) l' >>= \x -> epp (k x) l'
