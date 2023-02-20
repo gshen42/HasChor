@@ -47,7 +47,7 @@ parseRequest s =
 
 readRequest :: KnownSymbol a => Proxy a -> Choreo IO (Request @ a)
 readRequest a = do
-  a `locallyDo` \unwrap -> do
+  a `locally` \unwrap -> do
     let loop = do
           putStrLn "Command?"
           line <- getLine
@@ -61,7 +61,7 @@ readRequest a = do
 
 handleRequest :: KnownSymbol a => Proxy a -> State @ a -> Request @ a -> Choreo IO ((State, Response) @ a)
 handleRequest a state request = do
-  a `locallyDo` \unwrap -> case unwrap request of
+  a `locally` \unwrap -> case unwrap request of
     Put k v -> do
       return (Map.insert k v (unwrap state), Just "OK")
     Get k -> do
@@ -86,15 +86,15 @@ kvs a b state request next = do
 
 xfst :: KnownSymbol a => Proxy a -> (b, c) @ a -> Choreo IO (b @ a)
 xfst a t = do
-  a `locallyDo` \unwrap -> do return $ fst (unwrap t)
+  a `locally` \unwrap -> do return $ fst (unwrap t)
 
 xsnd :: KnownSymbol a => Proxy a -> (b, c) @ a -> Choreo IO (c @ a)
 xsnd a t = do
-  a `locallyDo` \unwrap -> do return $ snd (unwrap t)
+  a `locally` \unwrap -> do return $ snd (unwrap t)
 
 initKvs :: KnownSymbol a => Proxy a -> Choreo IO (State @ a)
 initKvs a = do
-  a `locallyDo` \unwrap -> return (Map.empty :: State)
+  a `locally` \unwrap -> return (Map.empty :: State)
 
 mainChoreo :: Choreo IO ()
 mainChoreo = do
@@ -124,10 +124,10 @@ mainChoreo = do
 
         res <- xsnd site1 r1
         res' <- (site1, res) ~> client
-        client `locallyDo` \unwrap -> do print (unwrap res')
-        site1 `locallyDo` \unwrap -> do print (unwrap s1')
-        site2 `locallyDo` \unwrap -> do print (unwrap s2')
-        site3 `locallyDo` \unwrap -> do print (unwrap s3')
+        client `locally` \unwrap -> do print (unwrap res')
+        site1 `locally` \unwrap -> do print (unwrap s1')
+        site2 `locally` \unwrap -> do print (unwrap s2')
+        site3 `locally` \unwrap -> do print (unwrap s3')
         loop (s1', s2', s3')
    in loop (i1, i2, i3)
   return ()

@@ -5,6 +5,7 @@
 
 module Main where
 
+import Choreography (runChoreography)
 import Choreography.Choreo
 import Choreography.Location
 import Choreography.Network.Http
@@ -39,7 +40,7 @@ parseReq s =
 kvs :: S @ "server" -> Choreo IO (S @ "server")
 kvs s = do
   cmdC <-
-    client `locallyDo` \unwrap -> do
+    client `locally` \unwrap -> do
       let loop = do
             putStrLn "Command?"
             line <- getLine
@@ -52,23 +53,23 @@ kvs s = do
       loop
   cmdS <- (client, cmdC) ~> server
   x <-
-    server `locallyDo` \unwrap -> case unwrap cmdS of
+    server `locally` \unwrap -> case unwrap cmdS of
       Put k v -> do
         return $ (Map.insert k v (unwrap s), Just "OK")
       Get k -> do
         let e = Map.lookup k (unwrap s)
          in do
               return $ (unwrap s, e)
-  s' <- server `locallyDo` \unwrap -> do return $ fst (unwrap x)
-  t <- server `locallyDo` \unwrap -> do return $ snd (unwrap x)
+  s' <- server `locally` \unwrap -> do return $ fst (unwrap x)
+  t <- server `locally` \unwrap -> do return $ snd (unwrap x)
   t' <- (server, t) ~> client
-  client `locallyDo` \unwrap -> do
+  client `locally` \unwrap -> do
     putStrLn $ show (unwrap t')
   return s'
 
 kvsServer :: Choreo IO ()
 kvsServer = do
-  initS <- server `locallyDo` \unwrap -> return (Map.empty :: S)
+  initS <- server `locally` \unwrap -> return (Map.empty :: S)
   let loop (s :: S @ "server") = do
         s' <- kvs s
         loop s'
@@ -77,10 +78,10 @@ kvsServer = do
 
 kvsClient :: Choreo IO ()
 kvsClient = do
-  initS <- server `locallyDo` \unwrap -> return (Map.empty :: S)
+  initS <- server `locally` \unwrap -> return (Map.empty :: S)
   kvs initS
   -- TODO(shun): program should exit without this
-  client `locallyDo` \unwrap -> do
+  client `locally` \unwrap -> do
     threadDelay 10000 -- without this, the server crashes
     exitSuccess
   return ()
@@ -89,15 +90,12 @@ main :: IO ()
 main = do
   [loc] <- getArgs
   x <- case loc of
-    "client" -> runNetwork config "client" clientP
-    "server" -> runNetwork config "server" serverP
+    "client" -> runChoreography config kvsClient "client"
+    "server" -> runChoreography config kvsServer "server"
   return ()
   where
-    clientP = epp kvsClient "client"
-    serverP = epp kvsServer "server"
-
     config =
-      mkConfig
+      mkHttpConfig
         [ ("client", ("localhost", 5000)),
           ("server", ("localhost", 5001))
         ]

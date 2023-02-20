@@ -5,6 +5,7 @@
 
 module Main where
 
+import Choreography (runChoreography)
 import Choreography.Choreo
 import Choreography.Location
 import Choreography.Network.Http
@@ -42,7 +43,7 @@ parseRequest s =
 
 readCommand :: Choreo IO (Request @ "client")
 readCommand = do
-  client `locallyDo` \unwrap -> do
+  client `locally` \unwrap -> do
     let loop = do
           putStrLn "Command?"
           line <- getLine
@@ -64,15 +65,15 @@ handleRequest ::
   Choreo IO (State @ s, Maybe String @ c)
 handleRequest s c state req = do
   result <-
-    s `locallyDo` \unwrap -> case unwrap req of
+    s `locally` \unwrap -> case unwrap req of
       Put k v -> do
         return (Map.insert k v (unwrap state), Just "OK")
       Get k -> do
         let e = Map.lookup k (unwrap state)
          in do
               return (unwrap state, e)
-  state' <- s `locallyDo` \unwrap -> do return $ fst (unwrap result)
-  msg <- s `locallyDo` \unwrap -> do return $ snd (unwrap result)
+  state' <- s `locally` \unwrap -> do return $ fst (unwrap result)
+  msg <- s `locally` \unwrap -> do return $ snd (unwrap result)
   msg' <- (s, msg) ~> c
   return (state', msg')
 
@@ -81,20 +82,20 @@ kvs (sp, sb) = do
   req <- readCommand
   req' <- (client, req) ~> primary
   (sp', msg) <- handleRequest primary client sp req'
-  client `locallyDo` \unwrap -> do
+  client `locally` \unwrap -> do
     print $ show (unwrap msg)
   req'' <- (primary, req') ~> backup
   (sb', _) <- handleRequest backup primary sb req''
-  primary `locallyDo` \unwrap -> do
+  primary `locally` \unwrap -> do
     print $ show (unwrap sp')
-  backup `locallyDo` \unwrap -> do
+  backup `locally` \unwrap -> do
     print $ show (unwrap sb')
   kvs (sp', sb')
 
 startKvs :: Choreo IO ()
 startKvs = do
-  initSp <- primary `locallyDo` \unwrap -> return (Map.empty :: State)
-  initSb <- backup `locallyDo` \unwrap -> return (Map.empty :: State)
+  initSp <- primary `locally` \unwrap -> return (Map.empty :: State)
+  initSb <- backup `locally` \unwrap -> return (Map.empty :: State)
   kvs (initSp, initSb)
   return ()
 
@@ -102,17 +103,13 @@ main :: IO ()
 main = do
   [loc] <- getArgs
   x <- case loc of
-    "client" -> runNetwork config "client" clientP
-    "primary" -> runNetwork config "primary" primaryP
-    "backup" -> runNetwork config "backup" backupP
+    "client" -> runChoreography config startKvs "client"
+    "primary" -> runChoreography config startKvs "primary"
+    "backup" -> runChoreography config startKvs "backup"
   return ()
   where
-    clientP = epp startKvs "client"
-    primaryP = epp startKvs "primary"
-    backupP = epp startKvs "backup"
-
     config =
-      mkConfig
+      mkHttpConfig
         [ ("client", ("localhost", 5000)),
           ("primary", ("localhost", 5001)),
           ("backup", ("localhost", 5002))
