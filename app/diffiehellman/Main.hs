@@ -4,9 +4,9 @@
 
 module Main where
 
+import Choreography (mkHttpConfig, runChoreography)
 import Choreography.Choreo
 import Choreography.Location
-import Choreography.Network.Http (mkConfig, runNetwork)
 import Data.Proxy
 import Data.Time
 import System.Environment
@@ -34,28 +34,28 @@ bob = Proxy
 diffieHellman :: Choreo IO (Integer @ "alice", Integer @ "bob")
 diffieHellman = do
   -- wait for alice to initiate the process
-  alice `locallyDo` \unwrap -> do
+  alice `locally` \unwrap -> do
     putStrLn "enter to start key exchange..."
     getLine
-  bob `locallyDo` \unwrap -> do
+  bob `locally` \unwrap -> do
     putStrLn "waiting for alice to initiate key exchange"
 
   -- alice picks p and g and sends them to bob
   pa <-
-    alice `locallyDo` \unwrap -> do
+    alice `locally` \unwrap -> do
       x <- randomRIO (200, 1000 :: Int)
       return $ primeNums !! x
   pb <- (alice, pa) ~> bob
-  ga <- alice `locallyDo` \unwrap -> do randomRIO (10, unwrap pa)
+  ga <- alice `locally` \unwrap -> do randomRIO (10, unwrap pa)
   gb <- (alice, ga) ~> bob
 
   -- alice and bob select secrets
-  a <- alice `locallyDo` \unwrap -> do randomRIO (200, 1000 :: Integer)
-  b <- bob `locallyDo` \unwrap -> do randomRIO (200, 1000 :: Integer)
+  a <- alice `locally` \unwrap -> do randomRIO (200, 1000 :: Integer)
+  b <- bob `locally` \unwrap -> do randomRIO (200, 1000 :: Integer)
 
   -- alice and bob computes numbers that they exchange
-  a' <- alice `locallyDo` \unwrap -> do return $ unwrap ga ^ unwrap a `mod` unwrap pa
-  b' <- bob `locallyDo` \unwrap -> do return $ unwrap gb ^ unwrap b `mod` unwrap pb
+  a' <- alice `locally` \unwrap -> do return $ unwrap ga ^ unwrap a `mod` unwrap pa
+  b' <- bob `locally` \unwrap -> do return $ unwrap gb ^ unwrap b `mod` unwrap pb
 
   -- exchange numbers
   a'' <- (alice, a') ~> bob
@@ -63,13 +63,13 @@ diffieHellman = do
 
   -- compute shared key
   s1 <-
-    alice `locallyDo` \unwrap ->
+    alice `locally` \unwrap ->
       let s = unwrap b'' ^ unwrap a `mod` unwrap pa
        in do
             putStrLn ("alice's shared key: " ++ show s)
             return s
   s2 <-
-    bob `locallyDo` \unwrap ->
+    bob `locally` \unwrap ->
       let s = unwrap a'' ^ unwrap b `mod` unwrap pb
        in do
             putStrLn ("bob's shared key: " ++ show s)
@@ -80,14 +80,12 @@ main :: IO ()
 main = do
   [loc] <- getArgs
   x <- case loc of
-    "alice" -> runNetwork config "alice" aliceP
-    "bob" -> runNetwork config "bob" bobP
+    "alice" -> runChoreography config diffieHellman "alice"
+    "bob" -> runChoreography config diffieHellman "bob"
   return ()
   where
-    aliceP = epp diffieHellman "alice"
-    bobP = epp diffieHellman "bob"
     config =
-      mkConfig
+      mkHttpConfig
         [ ("alice", ("localhost", 5000)),
           ("bob", ("localhost", 5001))
         ]
