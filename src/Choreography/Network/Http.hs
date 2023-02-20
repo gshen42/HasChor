@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE GADTs     #-}
 
 module Choreography.Network.Http where
 
@@ -12,15 +13,16 @@ import Network.HTTP.Client (Manager, defaultManagerSettings, newManager)
 import Servant.API
 import Servant.Client (ClientM, client, runClientM, BaseUrl(..), mkClientEnv, Scheme(..))
 import Servant.Server (Handler, Server, serve)
-import Control.Concurrent (forkIO)
-import Control.Concurrent.Chan (writeChan, readChan)
-import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Concurrent
+import Control.Concurrent.Chan
+import Control.Monad
+import Control.Monad.Freer
+import Control.Monad.IO.Class
 import Network.Wai.Handler.Warp (run)
-import Control.Monad ((>=>))
 
 type API = "send" :> Capture "from" LocTm :> ReqBody '[PlainText] String :> PostNoContent
 
-data HttpConfig = HttpConfig
+newtype HttpConfig = HttpConfig
   { locToUrl :: HashMap LocTm BaseUrl
   }
 
@@ -38,17 +40,42 @@ mkHttpConfig = HttpConfig . HashMap.fromList . fmap (fmap f)
       , baseUrlPath = ""
       }
 
+locs :: HttpConfig -> [LocTm]
+locs = HashMap.keys . locToUrl
+
+type RecvChans = HashMap LocTm (Chan String)
+
+mkRecvChans :: HttpConfig -> IO RecvChans
+mkRecvChans cfg = foldM f HashMap.empty (locs cfg)
+  where
+    f :: HashMap LocTm (Chan String) -> LocTm
+      -> IO (HashMap LocTm (Chan String))
+    f hm l = do
+      c <- newChan
+      return $ HashMap.insert l c hm
+
 runNetworkHttp :: MonadIO m => HttpConfig -> LocTm -> Network m a -> m a
 runNetworkHttp cfg self prog = do
-  ctx <- liftIO $ mkContext (HashMap.keys $ locToUrl cfg)
   mgr <- liftIO $ newManager defaultManagerSettings
-  liftIO $ forkIO (sendThread mgr cfg ctx)
-  liftIO $ forkIO (recvThread cfg ctx)
-  runNetworkMain ctx prog
-  loop -- TODO: the `loop` here is to ensure the main thread only exits when
-       -- the sending thread has finished sending all the messages
+  chans <- liftIO $ mkRecvChans cfg
+  liftIO $ forkIO (recvThread cfg chans)
+  runNetworkMain mgr chans prog
+  loop -- TODO: remove this, only needed to ensure broadcast succeeds
   where
     loop = loop
+
+    runNetworkMain :: MonadIO m => Manager -> RecvChans -> Network m a -> m a
+    runNetworkMain mgr chans = runFreer alg
+      where
+        alg :: MonadIO m => NetworkSig m a -> m a
+        alg (Run m)    = m
+        alg (Send a l) = liftIO $ do
+          res <- runClientM (send self $ show a) (mkClientEnv mgr (locToUrl cfg ! l))
+          case res of
+            Left err -> putStrLn $ "Error : " ++ show err
+            Right _  -> return ()
+        alg (Recv l)   = liftIO $ read <$> readChan (chans ! l)
+        alg (BCast a)  = mapM_ alg $ fmap (Send a) (locs cfg)
 
     api :: Proxy API
     api = Proxy
@@ -56,24 +83,16 @@ runNetworkHttp cfg self prog = do
     send :: LocTm -> String -> ClientM NoContent
     send = client api
 
-    sendThread :: Manager -> HttpConfig -> Context -> IO ()
-    sendThread mgr cfg ctx = do
-      (rmt, msg) <- readChan (sendChan ctx)
-      res <- runClientM (send self msg) (mkClientEnv mgr (locToUrl cfg ! rmt))
-      case res of
-        Left err -> putStrLn $ "Error : " ++ show err
-        Right _ -> sendThread mgr cfg ctx
-
-    server :: Context -> Server API
-    server ctx = handler
+    server :: RecvChans -> Server API
+    server chans = handler
       where
         handler :: LocTm -> String -> Handler NoContent
         handler rmt msg = do
-          liftIO $ writeChan (recvChans ctx ! rmt) msg
+          liftIO $ writeChan (chans ! rmt) msg
           return NoContent
 
-    recvThread :: HttpConfig -> Context -> IO ()
-    recvThread cfg ctx = run (baseUrlPort $ locToUrl cfg ! self ) (serve api $ server ctx)
+    recvThread :: HttpConfig -> RecvChans -> IO ()
+    recvThread cfg chans = run (baseUrlPort $ locToUrl cfg ! self ) (serve api $ server chans)
 
 instance Backend HttpConfig where
   runNetwork = runNetworkHttp
