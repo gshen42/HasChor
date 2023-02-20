@@ -1,6 +1,4 @@
---------------------------------------------------------------------------------
--- Don't use this module, it's not done.
---------------------------------------------------------------------------------
+{-# LANGUAGE GADTs #-}
 
 module Choreography.Network.Local where
 
@@ -9,27 +7,45 @@ import Choreography.Network
 import Control.Concurrent
 import Control.Concurrent.Chan
 import Control.Monad
-import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.Freer
+import Control.Monad.IO.Class
 import Data.HashMap.Strict (HashMap, (!))
+import Data.HashMap.Strict qualified as HashMap
 
-newtype LocalConfig = LocalConfig Context
+-- Each location is associated with a message buffer which stores messages sent
+-- from other locations.
+type MsgBuf = HashMap LocTm (Chan String)
+
+newtype LocalConfig = LocalConfig
+  { locToBuf :: HashMap LocTm MsgBuf
+  }
+
+newEmptyMsgBuf :: [LocTm] -> IO MsgBuf
+newEmptyMsgBuf = foldM f HashMap.empty
+  where
+    f hash loc = do
+      chan <- newChan
+      return (HashMap.insert loc chan hash)
 
 mkLocalConfig :: [LocTm] -> IO LocalConfig
-mkLocalConfig = mkContext >=> (return . LocalConfig)
+mkLocalConfig locs = LocalConfig <$> foldM f HashMap.empty locs
+  where
+    f hash loc = do
+      buf <- newEmptyMsgBuf locs
+      return (HashMap.insert loc buf hash)
+
+locs :: LocalConfig -> [LocTm]
+locs = HashMap.keys . locToBuf
 
 runNetworkLocal :: MonadIO m => LocalConfig -> LocTm -> Network m a -> m a
-runNetworkLocal cfg self prog = do
-  let (LocalConfig ctx) = cfg
-  liftIO $ forkIO $ sendRecvThrd ctx
-  runNetworkMain ctx prog
-  loop
+runNetworkLocal cfg self prog = runFreer alg prog
   where
-    loop = loop
-
-    sendRecvThrd :: Context -> IO ()
-    sendRecvThrd ctx = do
-      (rmt, msg) <- readChan (sendChan ctx)
-      writeChan (recvChans ctx ! rmt) msg
+    alg :: MonadIO m => NetworkSig m a -> m a
+    alg (Run m)    = m
+    alg (Send a l) = liftIO $ writeChan ((locToBuf cfg ! l) ! self) (show a)
+    alg (Recv l)   = liftIO $ read <$> readChan ((locToBuf cfg ! self) ! l)
+    alg (BCast a)  = mapM_ alg $ fmap (Send a) (locs cfg)
 
 instance Backend LocalConfig where
   runNetwork = runNetworkLocal
+
