@@ -49,17 +49,19 @@ readRequest = do
             ["PUT", k, v] -> Just (Put k v)
             _ -> Nothing
 
+handleRequest :: Request -> IORef State -> IO Response
+handleRequest request stateRef = case request of
+  Put key value -> do
+    modifyIORef stateRef (Map.insert key value)
+    return (Just value)
+  Get key -> do
+    state <- readIORef stateRef
+    return (Map.lookup key state)
+
 kvs :: Request @ "client" -> IORef State @ "server" -> Choreo IO (Response @ "client")
 kvs request stateRef = do
   request' <- (client, request) ~> server
-  response <-
-    server `locally` \unwrap -> case unwrap request' of
-      Put key value -> do
-        modifyIORef (unwrap stateRef) (Map.insert key value)
-        return (Just value)
-      Get key -> do
-        state <- readIORef (unwrap stateRef)
-        return (Map.lookup key state)
+  response <- server `locally` \unwrap -> handleRequest (unwrap request') (unwrap stateRef)
   (server, response) ~> client
 
 mainChoreo :: Choreo IO ()

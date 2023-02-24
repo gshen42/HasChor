@@ -56,6 +56,15 @@ readRequest = do
             ["PUT", k, v] -> Just (Put k v)
             _ -> Nothing
 
+handleRequest :: Request -> IORef State -> IO Response
+handleRequest request stateRef = case request of
+  Put key value -> do
+    modifyIORef stateRef (Map.insert key value)
+    return (Just value)
+  Get key -> do
+    state <- readIORef stateRef
+    return (Map.lookup key state)
+
 kvs :: Request @ "client" -> (IORef State @ "primary", IORef State @ "backup") -> Choreo IO (Response @ "client")
 kvs request (primaryStateRef, backupStateRef) = do
   request' <- (client, request) ~> primary
@@ -67,10 +76,7 @@ kvs request (primaryStateRef, backupStateRef) = do
       -- relay the request to backup
       request'' <- (primary, request') ~> backup
       -- process the request
-      ack <-
-        backup `locally` \unwrap -> case unwrap request'' of
-          Put key value -> do
-            modifyIORef (unwrap backupStateRef) (Map.insert key value)
+      ack <- backup `locally` \unwrap -> handleRequest (unwrap request'') (unwrap backupStateRef)
       -- send acknowledgement from backup to primary
       (backup, ack) ~> primary
       return ()
@@ -78,14 +84,7 @@ kvs request (primaryStateRef, backupStateRef) = do
       return ()
 
   -- process request on primary
-  response <-
-    primary `locally` \unwrap -> case unwrap request' of
-      Put key value -> do
-        modifyIORef (unwrap primaryStateRef) (Map.insert key value)
-        return (Just value)
-      Get key -> do
-        state <- readIORef (unwrap primaryStateRef)
-        return (Map.lookup key state)
+  response <- primary `locally` \unwrap -> handleRequest (unwrap request') (unwrap primaryStateRef)
 
   -- send response to client
   (primary, response) ~> client

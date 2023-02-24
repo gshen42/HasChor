@@ -56,6 +56,15 @@ readRequest = do
             ["PUT", k, v] -> Just (Put k v)
             _ -> Nothing
 
+handleRequest :: Request -> IORef State -> IO Response
+handleRequest request stateRef = case request of
+  Put key value -> do
+    modifyIORef stateRef (Map.insert key value)
+    return (Just value)
+  Get key -> do
+    state <- readIORef stateRef
+    return (Map.lookup key state)
+
 -- | ReplicationStrategy specifies how a request should be handled on possibly replicated servers
 -- `a` is a type that represent states across locations
 type ReplicationStrategy a = Request @ "primary" -> a -> Choreo IO (Response @ "primary")
@@ -77,22 +86,15 @@ primaryBackupReplicationStrategy request (primaryStateRef, backupStateRef) = do
   cond (primary, m) \case
     True -> do
       request'' <- (primary, request) ~> backup
-      backup `locally` \unwrap -> case unwrap request'' of
-        Put key value -> do
-          modifyIORef (unwrap backupStateRef) (Map.insert key value)
-      backup `locally` \_ -> do putStrLn "handled relayed request"
+      ack <- backup `locally` \unwrap -> handleRequest (unwrap request'') (unwrap backupStateRef)
+      -- primary waits for backup to acknowledge
+      (backup, ack) ~> primary
       return ()
     False -> do
       return ()
 
   -- process request on primary
-  primary `locally` \unwrap -> case unwrap request of
-    Put key value -> do
-      modifyIORef (unwrap primaryStateRef) (Map.insert key value)
-      return (Just value)
-    Get key -> do
-      state <- readIORef (unwrap primaryStateRef)
-      return (Map.lookup key state)
+  primary `locally` \unwrap -> handleRequest (unwrap request) (unwrap primaryStateRef)
 
 kvs :: Request @ "client" -> a -> ReplicationStrategy a -> Choreo IO (Response @ "client")
 kvs request stateRefs replicationStrategy = do
