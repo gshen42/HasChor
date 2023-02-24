@@ -82,6 +82,16 @@ executable kvs1
         time ^>= 1.11.1.1,
         containers ^>= 0.6.5.1
 
+executable kvs2
+    hs-source-dirs:   app/kvs-2-primary-backup
+    main-is:          Main.hs
+    default-language: GHC2021
+    build-depends:
+        HasChor,
+        base ^>= 4.16.3.0,
+        time ^>= 1.11.1.1,
+        containers ^>= 0.6.5.1
+
 executable kvs-chain
     hs-source-dirs:   app/kvs-chain
     main-is:          Main.hs
