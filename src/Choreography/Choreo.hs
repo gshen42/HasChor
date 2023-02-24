@@ -37,8 +37,6 @@ runChoreo = interpFreer handler
     handler (Comm _ a _) = return $ (wrap . unwrap) a
     handler (Cond _ a c) = runChoreo $ c (unwrap a)
 
--- TODO: use type family to precisely specify the return type of `Network`
--- TODO: is it possible to define `epp` in terms of `runFreer`
 epp :: Choreo m a -> LocTm -> Network m a
 epp c l' = interpFreer handler c
   where
