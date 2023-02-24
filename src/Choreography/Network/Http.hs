@@ -65,17 +65,17 @@ runNetworkHttp cfg self prog = do
     loop = loop
 
     runNetworkMain :: MonadIO m => Manager -> RecvChans -> Network m a -> m a
-    runNetworkMain mgr chans = runFreer alg
+    runNetworkMain mgr chans = interpFreer handler
       where
-        alg :: MonadIO m => NetworkSig m a -> m a
-        alg (Run m)    = m
-        alg (Send a l) = liftIO $ do
+        handler :: MonadIO m => NetworkSig m a -> m a
+        handler (Run m)    = m
+        handler(Send a l) = liftIO $ do
           res <- runClientM (send self $ show a) (mkClientEnv mgr (locToUrl cfg ! l))
           case res of
             Left err -> putStrLn $ "Error : " ++ show err
             Right _  -> return ()
-        alg (Recv l)   = liftIO $ read <$> readChan (chans ! l)
-        alg (BCast a)  = mapM_ alg $ fmap (Send a) (locs cfg)
+        handler (Recv l)   = liftIO $ read <$> readChan (chans ! l)
+        handler (BCast a)  = mapM_ handler $ fmap (Send a) (locs cfg)
 
     api :: Proxy API
     api = Proxy

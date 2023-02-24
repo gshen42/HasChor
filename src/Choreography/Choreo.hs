@@ -30,12 +30,12 @@ data ChoreoSig m a where
 type Choreo m = Freer (ChoreoSig m)
 
 runChoreo :: Monad m => Choreo m a -> m a
-runChoreo = runFreer alg
+runChoreo = interpFreer handler
   where
-    alg :: Monad m => ChoreoSig m a -> m a
-    alg (Local _ m)  = wrap <$> m unwrap
-    alg (Comm _ a _) = return $ (wrap . unwrap) a
-    alg (Cond _ a c) = runChoreo $ c (unwrap a)
+    handler :: Monad m => ChoreoSig m a -> m a
+    handler (Local _ m)  = wrap <$> m unwrap
+    handler (Comm _ a _) = return $ (wrap . unwrap) a
+    handler (Cond _ a c) = runChoreo $ c (unwrap a)
 
 -- TODO: use type family to precisely specify the return type of `Network`
 -- TODO: is it possible to define `epp` in terms of `runFreer`
