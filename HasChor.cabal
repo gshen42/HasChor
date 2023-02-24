@@ -102,6 +102,16 @@ executable kvs3
         time ^>= 1.11.1.1,
         containers ^>= 0.6.5.1
 
+executable kvs4
+    hs-source-dirs:   app/kvs-4-location-polymorphism
+    main-is:          Main.hs
+    default-language: GHC2021
+    build-depends:
+        HasChor,
+        base ^>= 4.16.3.0,
+        time ^>= 1.11.1.1,
+        containers ^>= 0.6.5.1
+
 executable kvs-chain
     hs-source-dirs:   app/kvs-chain
     main-is:          Main.hs
