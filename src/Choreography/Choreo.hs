@@ -40,17 +40,19 @@ runChoreo = interpFreer handler
 -- TODO: use type family to precisely specify the return type of `Network`
 -- TODO: is it possible to define `epp` in terms of `runFreer`
 epp :: Choreo m a -> LocTm -> Network m a
-epp (Return a) l = return a
-epp (Do (Local l m) k) l'
-  | toLocTm l == l' = run (m unwrap) >>= \x -> epp (k $ wrap x) l'
-  | otherwise       = epp (k Empty) l'
-epp (Do (Comm s a r) k) l
-  | toLocTm s == l = send (unwrap a) (toLocTm r) >> epp (k Empty) l
-  | toLocTm r == l = recv (toLocTm s) >>= \x -> epp (k (wrap x)) l
-  | otherwise      = epp (k Empty) l
-epp (Do (Cond l a c) k) l'
-  | toLocTm l == l' = broadcast (unwrap a) >> epp (c $ unwrap a) l' >>= \x -> epp (k x) l'
-  | otherwise       = recv (toLocTm l) >>= \x -> epp (c x) l' >>= \x -> epp (k x) l'
+epp c l' = interpFreer handler c
+  where
+    handler :: ChoreoSig m a -> Network m a
+    handler (Local l m)
+      | toLocTm l == l' = run (m unwrap) >>= return . wrap
+      | otherwise       = return Empty
+    handler (Comm s a r)
+      | toLocTm s == l' = send (unwrap a) (toLocTm r) >> return Empty
+      | toLocTm r == l' = recv (toLocTm s) >>= return . wrap
+      | otherwise       = return Empty
+    handler (Cond l a c)
+      | toLocTm l == l' = broadcast (unwrap a) >> epp (c (unwrap a)) l'
+      | otherwise       = recv (toLocTm l) >>= \x -> epp (c x) l'
 
   --------------------------------------------------------------------------------
   -- `Choreo` operators
