@@ -67,36 +67,41 @@ handleRequest request stateRef = case request of
 
 -- | ReplicationStrategy specifies how a request should be handled on possibly replicated servers
 -- `a` is a type that represent states across locations
-type ReplicationStrategy a = Request @ "primary" -> a -> Choreo IO (Response @ "primary")
+type ReplicationStrategy a =
+  Request @ "primary" -> a -> Choreo IO (Response @ "primary")
 
 nullReplicationStrategy :: ReplicationStrategy (IORef State @ "primary")
 nullReplicationStrategy request stateRef = do
-  primary `locally` \unwrap -> case unwrap request of
-    Put key value -> do
-      modifyIORef (unwrap stateRef) (Map.insert key value)
-      return (Just value)
-    Get key -> do
-      state <- readIORef (unwrap stateRef)
-      return (Map.lookup key state)
+  primary `locally` \unwrap ->
+    handleRequest (unwrap request) (unwrap stateRef)
 
-primaryBackupReplicationStrategy :: ReplicationStrategy (IORef State @ "primary", IORef State @ "backup")
+primaryBackupReplicationStrategy ::
+  ReplicationStrategy (IORef State @ "primary", IORef State @ "backup")
 primaryBackupReplicationStrategy request (primaryStateRef, backupStateRef) = do
   -- relay request to backup if it is mutating (= PUT)
   m <- primary `locally` \unwrap -> do return $ isMutation (unwrap request)
   cond (primary, m) \case
     True -> do
       request'' <- (primary, request) ~> backup
-      ack <- backup `locally` \unwrap -> handleRequest (unwrap request'') (unwrap backupStateRef)
-      -- primary waits for backup to acknowledge
-      (backup, ack) ~> primary
+      ( backup,
+        \unwrap ->
+          handleRequest (unwrap request'') (unwrap backupStateRef)
+        )
+        ~~> primary
       return ()
     False -> do
       return ()
 
   -- process request on primary
-  primary `locally` \unwrap -> handleRequest (unwrap request) (unwrap primaryStateRef)
+  primary `locally` \unwrap ->
+    handleRequest (unwrap request) (unwrap primaryStateRef)
 
-kvs :: Request @ "client" -> a -> ReplicationStrategy a -> Choreo IO (Response @ "client")
+kvs ::
+  forall a.
+  Request @ "client" ->
+  a ->
+  ReplicationStrategy a ->
+  Choreo IO (Response @ "client")
 kvs request stateRefs replicationStrategy = do
   request' <- (client, request) ~> primary
 

@@ -10,6 +10,7 @@ import Choreography.Choreo
 import Choreography.Location
 import Choreography.Network.Http
 import Control.Concurrent (threadDelay)
+import Control.Concurrent.Async (concurrently)
 import Control.Monad
 import Data.IORef
 import Data.Map (Map, (!))
@@ -82,15 +83,20 @@ nullReplicationStrategy request stateRef = do
       state <- readIORef (unwrap stateRef)
       return (Map.lookup key state)
 
-doBackup :: KnownSymbol a => KnownSymbol b => Proxy a -> Proxy b -> Request @ a -> IORef State @ b -> Choreo IO ()
+doBackup ::
+  KnownSymbol a =>
+  KnownSymbol b =>
+  Proxy a ->
+  Proxy b ->
+  Request @ a ->
+  IORef State @ b ->
+  Choreo IO ()
 doBackup locA locB request stateRef = do
   m <- locA `locally` \unwrap -> do return $ isMutation (unwrap request)
   cond (locA, m) \case
     True -> do
       request' <- (locA, request) ~> locB
-      ack <- locB `locally` \unwrap -> handleRequest (unwrap request') (unwrap stateRef)
-      (locB, ack) ~> locA
-      locB `locally` \_ -> do putStrLn $ "backed up at " ++ show (toLocTm locB)
+      (locB, \unwrap -> handleRequest (unwrap request') (unwrap stateRef)) ~~> locA
       return ()
     False -> do
       return ()
@@ -103,14 +109,19 @@ primaryBackupReplicationStrategy request (primaryStateRef, backupStateRef) = do
   -- process request on primary
   primary `locally` \unwrap -> handleRequest (unwrap request) (unwrap primaryStateRef)
 
-doubleBackupReplicationStrategy :: ReplicationStrategy (IORef State @ "primary", IORef State @ "backup1", IORef State @ "backup2")
-doubleBackupReplicationStrategy request (primaryStateRef, backup1StateRef, backup2StateRef) = do
-  -- relay to two backup locations in serial
-  doBackup primary backup1 request backup1StateRef
-  doBackup primary backup2 request backup2StateRef
+doubleBackupReplicationStrategy ::
+  ReplicationStrategy
+    (IORef State @ "primary", IORef State @ "backup1", IORef State @ "backup2")
+doubleBackupReplicationStrategy
+  request
+  (primaryStateRef, backup1StateRef, backup2StateRef) = do
+    -- relay to two backup locations in serial
+    doBackup primary backup1 request backup1StateRef
+    doBackup primary backup2 request backup2StateRef
 
-  -- process request on primary
-  primary `locally` \unwrap -> handleRequest (unwrap request) (unwrap primaryStateRef)
+    -- process request on primary
+    primary `locally` \unwrap ->
+      handleRequest (unwrap request) (unwrap primaryStateRef)
 
 kvs :: Request @ "client" -> a -> ReplicationStrategy a -> Choreo IO (Response @ "client")
 kvs request stateRefs replicationStrategy = do

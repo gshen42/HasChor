@@ -65,7 +65,10 @@ handleRequest request stateRef = case request of
     state <- readIORef stateRef
     return (Map.lookup key state)
 
-kvs :: Request @ "client" -> (IORef State @ "primary", IORef State @ "backup") -> Choreo IO (Response @ "client")
+kvs ::
+  Request @ "client" ->
+  (IORef State @ "primary", IORef State @ "backup") ->
+  Choreo IO (Response @ "client")
 kvs request (primaryStateRef, backupStateRef) = do
   request' <- (client, request) ~> primary
 
@@ -76,7 +79,9 @@ kvs request (primaryStateRef, backupStateRef) = do
       -- relay the request to backup
       request'' <- (primary, request') ~> backup
       -- process the request
-      ack <- backup `locally` \unwrap -> handleRequest (unwrap request'') (unwrap backupStateRef)
+      ack <-
+        backup `locally` \unwrap ->
+          handleRequest (unwrap request'') (unwrap backupStateRef)
       -- send acknowledgement from backup to primary
       (backup, ack) ~> primary
       return ()
@@ -84,7 +89,9 @@ kvs request (primaryStateRef, backupStateRef) = do
       return ()
 
   -- process request on primary
-  response <- primary `locally` \unwrap -> handleRequest (unwrap request') (unwrap primaryStateRef)
+  response <-
+    primary `locally` \unwrap ->
+      handleRequest (unwrap request') (unwrap primaryStateRef)
 
   -- send response to client
   (primary, response) ~> client

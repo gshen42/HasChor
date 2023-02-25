@@ -58,10 +58,15 @@ handleRequest request stateRef = case request of
     state <- readIORef stateRef
     return (Map.lookup key state)
 
-kvs :: Request @ "client" -> IORef State @ "server" -> Choreo IO (Response @ "client")
+kvs ::
+  Request @ "client" ->
+  IORef State @ "server" ->
+  Choreo IO (Response @ "client")
 kvs request stateRef = do
   request' <- (client, request) ~> server
-  response <- server `locally` \unwrap -> handleRequest (unwrap request') (unwrap stateRef)
+  response <-
+    server `locally` \unwrap ->
+      handleRequest (unwrap request') (unwrap stateRef)
   (server, response) ~> client
 
 mainChoreo :: Choreo IO ()
