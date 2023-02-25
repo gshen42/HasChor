@@ -33,8 +33,8 @@ type State = Map String String
 
 data Request = Put String String | Get String deriving (Show, Read)
 
-isMutation :: Request -> Bool
-isMutation request = case request of
+isPut :: Request -> Bool
+isPut request = case request of
   Put _ _ -> True
   _ -> False
 
@@ -73,7 +73,7 @@ kvs request (primaryStateRef, backupStateRef) = do
   request' <- (client, request) ~> primary
 
   -- if the request is mutating (PUT)
-  m <- primary `locally` \unwrap -> do return $ isMutation (unwrap request')
+  m <- primary `locally` \unwrap -> do return $ isPut (unwrap request')
   cond (primary, m) \case
     True -> do
       -- relay the request to backup

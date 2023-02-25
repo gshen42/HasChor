@@ -83,4 +83,14 @@ mainChoreo = do
 
 main :: IO ()
 main = do
-  runChoreo mainChoreo
+  [loc] <- getArgs
+  case loc of
+    "client" -> runChoreography config mainChoreo "client"
+    "server" -> runChoreography config mainChoreo "server"
+  return ()
+  where
+    config =
+      mkHttpConfig
+        [ ("client", ("localhost", 3000)),
+          ("server", ("localhost", 4000))
+        ]
