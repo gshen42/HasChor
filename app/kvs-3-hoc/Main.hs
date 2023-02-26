@@ -133,7 +133,7 @@ primaryBackupChoreo = do
     loop stateRefs = do
       request <- client `locally` \_ -> readRequest
       response <- kvs request stateRefs primaryBackupReplicationStrategy
-      client `locally` \unwrap -> do putStrLn (show (unwrap response))
+      client `locally` \unwrap -> do putStrLn ("> " ++ show (unwrap response))
       loop stateRefs
 
 main :: IO ()

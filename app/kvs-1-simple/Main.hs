@@ -78,7 +78,7 @@ mainChoreo = do
     loop stateRef = do
       request <- client `locally` \_ -> readRequest
       response <- kvs request stateRef
-      client `locally` \unwrap -> do putStrLn (show (unwrap response))
+      client `locally` \unwrap -> do putStrLn ("> " ++ (show (unwrap response)))
       loop stateRef
 
 main :: IO ()
