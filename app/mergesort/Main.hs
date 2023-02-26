@@ -4,6 +4,7 @@
 
 module Main where
 
+import Choreography (runChoreography)
 import Choreography.Choreo
 import Choreography.Location
 import Choreography.Network.Http
@@ -102,4 +103,16 @@ mainChoreo = do
 
 main :: IO ()
 main = do
-  runChoreo mainChoreo
+  [loc] <- getArgs
+  case loc of
+    "primary" -> runChoreography config mainChoreo "primary"
+    "worker1" -> runChoreography config mainChoreo "worker1"
+    "worker2" -> runChoreography config mainChoreo "worker2"
+  return ()
+  where
+    config =
+      mkHttpConfig
+        [ ("primary", ("localhost", 3000)),
+          ("worker1", ("localhost", 4000)),
+          ("worker2", ("localhost", 5000))
+        ]
