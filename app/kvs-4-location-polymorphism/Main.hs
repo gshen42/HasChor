@@ -174,4 +174,18 @@ doubleBackupChoreo = do
 
 main :: IO ()
 main = do
-  runChoreo doubleBackupChoreo
+  [loc] <- getArgs
+  case loc of
+    "client" -> runChoreography config primaryBackupChoreo "client"
+    "primary" -> runChoreography config primaryBackupChoreo "primary"
+    "backup1" -> runChoreography config primaryBackupChoreo "backup1"
+    "backup2" -> runChoreography config primaryBackupChoreo "backup2"
+  return ()
+  where
+    config =
+      mkHttpConfig
+        [ ("client", ("localhost", 3000)),
+          ("primary", ("localhost", 4000)),
+          ("backup1", ("localhost", 5000)),
+          ("backup2", ("localhost", 6000))
+        ]
