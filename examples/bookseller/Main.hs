@@ -31,7 +31,13 @@ deliveryDate "Homotopy Type Theory" = return (fromGregorian 2023 01 01)
 
 bookseller :: (Int @ "buyer" -> Choreo IO (Bool @ "buyer")) -> Choreo IO (Maybe Day @ "buyer")
 bookseller mkDecision = do
-  title <- (buyer, \_ -> getLine) ~~> seller
+  title <-
+    ( buyer,
+      \_ -> do
+        putStrLn "Enter the title of the book to purchase"
+        getLine
+      )
+      ~~> seller
   price <- (seller, \un -> lookupPrice (un title)) ~~> buyer
   decision <- mkDecision price
   cond (buyer, decision) \case
@@ -41,7 +47,9 @@ bookseller mkDecision = do
         print (un date)
         return (Just (un date))
     False ->
-      buyer `locally` \_ -> return Nothing
+      buyer `locally` \_ -> do
+        putStrLn "Out of budget"
+        return Nothing
 
 mkDecision1 :: Int @ "buyer" -> Choreo IO (Bool @ "buyer")
 mkDecision1 price = do
@@ -60,7 +68,7 @@ main = do
   case loc of
     "buyer" -> runChoreography cfg choreo "buyer"
     "seller" -> runChoreography cfg choreo "seller"
-    "buyer2" -> runChoreography cfg choreo "buyer2"
+  -- "buyer2" -> runChoreography cfg choreo "buyer2"
   return ()
   where
     choreo = bookseller mkDecision1
