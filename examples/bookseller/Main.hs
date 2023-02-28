@@ -1,6 +1,6 @@
-{-# LANGUAGE BlockArguments    #-}
-{-# LANGUAGE DataKinds         #-}
-{-# LANGUAGE LambdaCase        #-}
+{-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Main where
 
@@ -23,11 +23,11 @@ withinBudget x = return (x <= 100)
 
 lookupPrice :: Monad m => String -> m Int
 lookupPrice "Types and Programming Languages" = return 80
-lookupPrice "Homotopy Type Theory"            = return 120
+lookupPrice "Homotopy Type Theory" = return 120
 
 deliveryDate :: Monad m => String -> m Day
 deliveryDate "Types and Programming Languages" = return (fromGregorian 2022 12 19)
-deliveryDate "Homotopy Type Theory"            = return (fromGregorian 2023 01 01)
+deliveryDate "Homotopy Type Theory" = return (fromGregorian 2023 01 01)
 
 bookseller :: (Int @ "buyer" -> Choreo IO (Bool @ "buyer")) -> Choreo IO (Maybe Day @ "buyer")
 bookseller mkDecision = do
@@ -58,14 +58,16 @@ main :: IO ()
 main = do
   [loc] <- getArgs
   case loc of
-    "buyer"   -> runChoreography cfg choreo "buyer"
-    "seller"  -> runChoreography cfg choreo "seller"
-    "buyer2"  -> runChoreography cfg choreo "buyer2"
+    "buyer" -> runChoreography cfg choreo "buyer"
+    "seller" -> runChoreography cfg choreo "seller"
+    "buyer2" -> runChoreography cfg choreo "buyer2"
   return ()
   where
     choreo = bookseller mkDecision1
 
-    cfg = mkHttpConfig [ ("buyer",  ("localhost", 4242))
-                       , ("seller", ("localhost", 4343))
---                       , ("buyer2", ("localhost", 4444))
-                       ]
+    cfg =
+      mkHttpConfig
+        [ ("buyer", ("localhost", 4242)),
+          ("seller", ("localhost", 4343))
+          --                       , ("buyer2", ("localhost", 4444))
+        ]

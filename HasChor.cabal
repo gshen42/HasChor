@@ -34,7 +34,7 @@ library
         warp ^>= 3.3.23
 
 executable bank-2pc
-    hs-source-dirs:   app/bank-2pc
+    hs-source-dirs:   examples/bank-2pc
     main-is:          Main.hs
     default-language: GHC2021
     build-depends:
@@ -44,7 +44,7 @@ executable bank-2pc
         split ^>= 0.2.3.5
         
 executable bookseller
-    hs-source-dirs:   app/bookseller
+    hs-source-dirs:   examples/bookseller
     main-is:          Main.hs
     default-language: GHC2021
     build-depends:
@@ -53,7 +53,7 @@ executable bookseller
         time ^>= 1.11.1.1
 
 executable diffiehellman
-    hs-source-dirs:   app/diffiehellman
+    hs-source-dirs:   examples/diffiehellman
     main-is:          Main.hs
     default-language: GHC2021
     build-depends:
@@ -63,7 +63,7 @@ executable diffiehellman
         random ^>= 1.2.1.1
 
 executable kvs1
-    hs-source-dirs:   app/kvs-1-simple
+    hs-source-dirs:   examples/kvs-1-simple
     main-is:          Main.hs
     default-language: GHC2021
     build-depends:
@@ -73,7 +73,7 @@ executable kvs1
         containers ^>= 0.6.5.1
 
 executable kvs2
-    hs-source-dirs:   app/kvs-2-primary-backup
+    hs-source-dirs:   examples/kvs-2-primary-backup
     main-is:          Main.hs
     default-language: GHC2021
     build-depends:
@@ -83,7 +83,7 @@ executable kvs2
         containers ^>= 0.6.5.1
 
 executable kvs3
-    hs-source-dirs:   app/kvs-3-hoc
+    hs-source-dirs:   examples/kvs-3-hoc
     main-is:          Main.hs
     default-language: GHC2021
     build-depends:
@@ -93,7 +93,7 @@ executable kvs3
         containers ^>= 0.6.5.1
 
 executable kvs4
-    hs-source-dirs:   app/kvs-4-location-polymorphism
+    hs-source-dirs:   examples/kvs-4-location-polymorphism
     main-is:          Main.hs
     default-language: GHC2021
     build-depends:
@@ -103,7 +103,7 @@ executable kvs4
         containers ^>= 0.6.5.1
 
 executable mergesort
-    hs-source-dirs:   app/mergesort
+    hs-source-dirs:   examples/mergesort
     main-is:          Main.hs
     default-language: GHC2021
     build-depends:

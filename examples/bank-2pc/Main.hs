@@ -12,6 +12,7 @@ import Choreography.Network.Http
 import Data.List.Split (splitOn)
 import Data.Maybe (catMaybes, mapMaybe)
 import Data.Proxy
+import System.Environment
 import Text.Read (readMaybe)
 
 client :: Proxy "client"
@@ -78,7 +79,9 @@ bank state = do
   (committed, state') <- handleTransaction state tx
   committed' <- (coordinator, committed) ~> client
   client `locally` \unwrap -> do
-    putStrLn $ if unwrap committed' then "committed" else "not committed"
+    putStrLn if unwrap committed' then "Committed" else "Not committed"
+  alice `locally` \unwrap -> do putStrLn ("Alice's balance: " ++ show (unwrap (fst state')))
+  bob `locally` \unwrap -> do putStrLn ("Bob's balance: " ++ show (unwrap (snd state')))
   bank state'
   return ()
 
