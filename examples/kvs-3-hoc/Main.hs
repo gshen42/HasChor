@@ -33,11 +33,6 @@ type State = Map String String
 
 data Request = Put String String | Get String deriving (Show, Read)
 
-isPut :: Request -> Bool
-isPut request = case request of
-  Put _ _ -> True
-  _ -> False
-
 type Response = Maybe String
 
 readRequest :: IO Request
@@ -79,17 +74,16 @@ primaryBackupReplicationStrategy ::
   ReplicationStrategy (IORef State @ "primary", IORef State @ "backup")
 primaryBackupReplicationStrategy request (primaryStateRef, backupStateRef) = do
   -- relay request to backup if it is mutating (= PUT)
-  m <- primary `locally` \unwrap -> do return $ isPut (unwrap request)
-  cond (primary, m) \case
-    True -> do
-      request'' <- (primary, request) ~> backup
+  cond (primary, request) \case
+    Put _ _ -> do
+      request' <- (primary, request) ~> backup
       ( backup,
         \unwrap ->
-          handleRequest (unwrap request'') (unwrap backupStateRef)
+          handleRequest (unwrap request') (unwrap backupStateRef)
         )
         ~~> primary
       return ()
-    False -> do
+    _ -> do
       return ()
 
   -- process request on primary

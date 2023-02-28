@@ -33,11 +33,6 @@ type State = Map String String
 
 data Request = Put String String | Get String deriving (Show, Read)
 
-isPut :: Request -> Bool
-isPut request = case request of
-  Put _ _ -> True
-  _ -> False
-
 type Response = Maybe String
 
 readRequest :: IO Request
@@ -72,20 +67,15 @@ kvs ::
 kvs request (primaryStateRef, backupStateRef) = do
   request' <- (client, request) ~> primary
 
-  -- if the request is mutating (PUT)
-  m <- primary `locally` \unwrap -> do return $ isPut (unwrap request')
-  cond (primary, m) \case
-    True -> do
-      -- relay the request to backup
+  cond (primary, request') \case
+    Put key value -> do
       request'' <- (primary, request') ~> backup
-      -- process the request
       ack <-
-        backup `locally` \unwrap ->
+        backup `locally` \unwrap -> do
           handleRequest (unwrap request'') (unwrap backupStateRef)
-      -- send acknowledgement from backup to primary
       (backup, ack) ~> primary
       return ()
-    False -> do
+    _ -> do
       return ()
 
   -- process request on primary

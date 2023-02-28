@@ -36,11 +36,6 @@ type State = Map String String
 
 data Request = Put String String | Get String deriving (Show, Read)
 
-isPut :: Request -> Bool
-isPut request = case request of
-  Put _ _ -> True
-  _ -> False
-
 type Response = Maybe String
 
 readRequest :: IO Request
@@ -91,14 +86,13 @@ doBackup ::
   IORef State @ b ->
   Choreo IO ()
 doBackup locA locB request stateRef = do
-  m <- locA `locally` \unwrap -> do return $ isPut (unwrap request)
-  cond (locA, m) \case
-    True -> do
+  cond (locA, request) \case
+    Put _ _ -> do
       request' <- (locA, request) ~> locB
       (locB, \unwrap -> handleRequest (unwrap request') (unwrap stateRef))
         ~~> locA
       return ()
-    False -> do
+    _ -> do
       return ()
 
 primaryBackupReplicationStrategy :: ReplicationStrategy (IORef State @ "primary", IORef State @ "backup1")
