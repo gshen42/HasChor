@@ -33,11 +33,81 @@ library
         unordered-containers ^>= 0.2.19.1,
         warp ^>= 3.3.23
 
+executable bank-2pc
+    hs-source-dirs:   examples/bank-2pc
+    main-is:          Main.hs
+    default-language: GHC2021
+    build-depends:
+        HasChor,
+        base ^>= 4.16.3.0,
+        time ^>= 1.11.1.1,
+        split ^>= 0.2.3.5
+        
 executable bookseller
-    hs-source-dirs:   app/bookseller
+    hs-source-dirs:   examples/bookseller
     main-is:          Main.hs
     default-language: GHC2021
     build-depends:
         HasChor,
         base ^>= 4.16.3.0,
         time ^>= 1.11.1.1
+
+executable diffiehellman
+    hs-source-dirs:   examples/diffiehellman
+    main-is:          Main.hs
+    default-language: GHC2021
+    build-depends:
+        HasChor,
+        base ^>= 4.16.3.0,
+        time ^>= 1.11.1.1,
+        random ^>= 1.2.1.1
+
+executable kvs1
+    hs-source-dirs:   examples/kvs-1-simple
+    main-is:          Main.hs
+    default-language: GHC2021
+    build-depends:
+        HasChor,
+        base ^>= 4.16.3.0,
+        time ^>= 1.11.1.1,
+        containers ^>= 0.6.5.1
+
+executable kvs2
+    hs-source-dirs:   examples/kvs-2-primary-backup
+    main-is:          Main.hs
+    default-language: GHC2021
+    build-depends:
+        HasChor,
+        base ^>= 4.16.3.0,
+        time ^>= 1.11.1.1,
+        containers ^>= 0.6.5.1
+
+executable kvs3
+    hs-source-dirs:   examples/kvs-3-hoc
+    main-is:          Main.hs
+    default-language: GHC2021
+    build-depends:
+        HasChor,
+        base ^>= 4.16.3.0,
+        time ^>= 1.11.1.1,
+        containers ^>= 0.6.5.1
+
+executable kvs4
+    hs-source-dirs:   examples/kvs-4-location-polymorphism
+    main-is:          Main.hs
+    default-language: GHC2021
+    build-depends:
+        HasChor,
+        base ^>= 4.16.3.0,
+        time ^>= 1.11.1.1,
+        containers ^>= 0.6.5.1
+
+executable mergesort
+    hs-source-dirs:   examples/mergesort
+    main-is:          Main.hs
+    default-language: GHC2021
+    build-depends:
+        HasChor,
+        base ^>= 4.16.3.0,
+        time ^>= 1.11.1.1,
+        containers ^>= 0.6.5.1
