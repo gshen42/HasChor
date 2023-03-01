@@ -42,11 +42,11 @@ epp c l' = interpFreer handler c
   where
     handler :: ChoreoSig m a -> Network m a
     handler (Local l m)
-      | toLocTm l == l' = run (m unwrap) >>= return . wrap
+      | toLocTm l == l' = wrap <$> run (m unwrap)
       | otherwise       = return Empty
     handler (Comm s a r)
       | toLocTm s == l' = send (unwrap a) (toLocTm r) >> return Empty
-      | toLocTm r == l' = recv (toLocTm s) >>= return . wrap
+      | toLocTm r == l' = wrap <$> recv (toLocTm s)
       | otherwise       = return Empty
     handler (Cond l a c)
       | toLocTm l == l' = broadcast (unwrap a) >> epp (c (unwrap a)) l'
