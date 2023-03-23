@@ -43,8 +43,26 @@ executable bank-2pc
         time ^>= 1.11.1.1,
         split ^>= 0.2.3.5
 
-executable bookseller-higher-order
-    hs-source-dirs:   examples/bookseller-higher-order
+executable bookseller-0-network
+    hs-source-dirs:   examples/bookseller-0-network
+    main-is:          Main.hs
+    default-language: GHC2021
+    build-depends:
+        HasChor,
+        base ^>= 4.16.3.0,
+        time ^>= 1.11.1.1
+
+executable bookseller-1-simple
+    hs-source-dirs:   examples/bookseller-1-simple
+    main-is:          Main.hs
+    default-language: GHC2021
+    build-depends:
+        HasChor,
+        base ^>= 4.16.3.0,
+        time ^>= 1.11.1.1
+
+executable bookseller-2-higher-order
+    hs-source-dirs:   examples/bookseller-2-higher-order
     main-is:          Main.hs
     default-language: GHC2021
     build-depends:
