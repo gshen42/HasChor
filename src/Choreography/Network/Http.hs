@@ -58,12 +58,12 @@ runNetworkHttp :: MonadIO m => HttpConfig -> LocTm -> Network m a -> m a
 runNetworkHttp cfg self prog = do
   mgr <- liftIO $ newManager defaultManagerSettings
   chans <- liftIO $ mkRecvChans cfg
-  liftIO $ forkIO (recvThread cfg chans)
-  runNetworkMain mgr chans prog
-  loop -- TODO: remove this, only needed to ensure broadcast succeeds
+  recvT <- liftIO $ forkIO (recvThread cfg chans)
+  result <- runNetworkMain mgr chans prog
+  liftIO $ threadDelay 1000000 -- wait until all outstanding requests to be completed
+  liftIO $ killThread recvT
+  return result
   where
-    loop = loop
-
     runNetworkMain :: MonadIO m => Manager -> RecvChans -> Network m a -> m a
     runNetworkMain mgr chans = interpFreer handler
       where
