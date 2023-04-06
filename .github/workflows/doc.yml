@@ -21,7 +21,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
+  build-deploy-doc:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -36,3 +36,16 @@ jobs:
 
       - name: Build doc
         run: cabal haddock --haddock-hyperlink-source --haddock-quickjump --haddock-html-location='https://hackage.haskell.org/package/$pkg-$version/docs'
+
+      - name: Setup GitHub Pages
+        uses: actions/configure-pages@v3
+
+      - name: Upload artifact
+         uses: actions/upload-pages-artifact@v1
+         with:
+           # FIXME: make cabal output where the generated doc is instaed of hard coding it
+           path: './dist-newstyle/build/x86_64-linux/ghc-9.2.7/HasChor-0.1.0.0/doc/html/HasChor/'
+
+       - name: Deploy to GitHub Pages
+         id: deployment
+         uses: actions/deploy-pages@v2
