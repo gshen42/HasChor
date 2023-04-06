@@ -22,7 +22,6 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Single deploy job since we're just deploying
   deploy:
     environment:
       name: github-pages
@@ -31,13 +30,23 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        
       - name: Setup Pages
         uses: actions/configure-pages@v3
+        
+      - name: Build documantation
+        run: | 
+          cabal haddock \ 
+            --haddock-hyperlink-source \
+            --haddock-quickjump \
+            --haddock-html-location='https://hackage.haskell.org/package/$pkg-$version/docs'
+        
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
         with:
           # Upload entire repository
           path: '.'
+          
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v2
