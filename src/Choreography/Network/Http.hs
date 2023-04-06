@@ -1,6 +1,8 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs     #-}
 
+-- | This module implments the HTTP message transport backend for the `Network`
+-- monad.
 module Choreography.Network.Http where
 
 import Choreography.Location
@@ -20,8 +22,14 @@ import Control.Monad.Freer
 import Control.Monad.IO.Class
 import Network.Wai.Handler.Warp (run)
 
+-- * Servant API
+
 type API = "send" :> Capture "from" LocTm :> ReqBody '[PlainText] String :> PostNoContent
 
+-- * Http configuration
+
+-- | The HTTP backend configuration specifies how locations are mapped to
+-- network hosts and ports.
 newtype HttpConfig = HttpConfig
   { locToUrl :: HashMap LocTm BaseUrl
   }
@@ -29,6 +37,8 @@ newtype HttpConfig = HttpConfig
 type Host = String
 type Port = Int
 
+-- | Create a HTTP backend configuration from a association list that maps
+-- locations to network hosts and ports.
 mkHttpConfig :: [(LocTm, (Host, Port))] -> HttpConfig
 mkHttpConfig = HttpConfig . HashMap.fromList . fmap (fmap f)
   where
@@ -43,6 +53,8 @@ mkHttpConfig = HttpConfig . HashMap.fromList . fmap (fmap f)
 locs :: HttpConfig -> [LocTm]
 locs = HashMap.keys . locToUrl
 
+-- * Receiving channels
+
 type RecvChans = HashMap LocTm (Chan String)
 
 mkRecvChans :: HttpConfig -> IO RecvChans
@@ -53,6 +65,8 @@ mkRecvChans cfg = foldM f HashMap.empty (locs cfg)
     f hm l = do
       c <- newChan
       return $ HashMap.insert l c hm
+
+-- * HTTP backend
 
 runNetworkHttp :: MonadIO m => HttpConfig -> LocTm -> Network m a -> m a
 runNetworkHttp cfg self prog = do

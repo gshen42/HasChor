@@ -1,5 +1,6 @@
 {-# LANGUAGE GADTs #-}
 
+-- | This module defines the multi-thread backend for the `Network` monad.
 module Choreography.Network.Local where
 
 import Choreography.Location
@@ -12,7 +13,7 @@ import Control.Monad.IO.Class
 import Data.HashMap.Strict (HashMap, (!))
 import Data.HashMap.Strict qualified as HashMap
 
--- Each location is associated with a message buffer which stores messages sent
+-- | Each location is associated with a message buffer which stores messages sent
 -- from other locations.
 type MsgBuf = HashMap LocTm (Chan String)
 
