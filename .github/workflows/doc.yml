@@ -41,10 +41,10 @@ jobs:
         uses: actions/configure-pages@v3
 
       - name: Upload artifact
-         uses: actions/upload-pages-artifact@v1
-         with:
-           # FIXME: make cabal output where the generated doc is instaed of hard coding it
-           path: './dist-newstyle/build/x86_64-linux/ghc-9.2.7/HasChor-0.1.0.0/doc/html/HasChor/'
+        uses: actions/upload-pages-artifact@v1
+        with:
+          # FIXME: make cabal output where the generated doc is instaed of hard coding it
+          path: './dist-newstyle/build/x86_64-linux/ghc-9.2.7/HasChor-0.1.0.0/doc/html/HasChor/'
 
        - name: Deploy to GitHub Pages
          id: deployment
