@@ -1,0 +1,38 @@
+name: Build and deploy documentation
+
+on:
+  # Runs on pushes targeting the default branch
+  push:
+    branches: ["main"]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set up GHC 9.2.7 and Cabal 3.6.2.0
+        uses: haskell/actions/setup@v2
+        with:
+          ghc-version: '9.2.7'
+          cabal-version: '3.6.2.0'
+          cabal-update: true
+
+      - name: Build doc
+        run: cabal haddock --haddock-hyperlink-source --haddock-quickjump haddock-html-location='https://hackage.haskell.org/package/$pkg-$version/docs'
