@@ -21,7 +21,6 @@ library
         Choreography.Network,
         Choreography.Network.Http
         Choreography.Network.Local
-    other-modules:
         Control.Monad.Freer
     build-depends:
         base ^>= 4.16.3.0,

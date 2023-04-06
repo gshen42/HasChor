@@ -1,10 +1,7 @@
 {-# LANGUAGE GADTs              #-}
 {-# LANGUAGE ImpredicativeTypes #-}
 
---------------------------------------------------------------------------------
--- Monads for writing choreographies.
---------------------------------------------------------------------------------
-
+-- | This module defines `Choreo`, the monad for writing choreographies.
 module Choreography.Choreo where
 
 import Choreography.Location
@@ -14,21 +11,36 @@ import Data.List
 import Data.Proxy
 import GHC.TypeLits
 
+-- * The Choreo monad
+
+-- | A constrained version of `unwrap` that only unwrap values located at a
+-- specifix location
 type Unwrap l = forall a. a @ l -> a
 
+-- | Effect signature for the `Choreo` monad. @m@ is a monad that represents
+-- local computations.
 data ChoreoSig m a where
-  Local :: (KnownSymbol l) =>
-           Proxy l -> (Unwrap l -> m a) -> ChoreoSig m (a @ l)
+  Local :: (KnownSymbol l)
+        => Proxy l
+        -> (Unwrap l -> m a)
+        -> ChoreoSig m (a @ l)
 
-  Comm  :: (Show a, Read a, KnownSymbol l, KnownSymbol l') =>
-           Proxy l -> a @ l -> Proxy l' -> ChoreoSig m (a @ l')
-  -- ^ TODO: ensure l and l' are different
+  Comm :: (Show a, Read a, KnownSymbol l, KnownSymbol l')
+       => Proxy l
+       -> a @ l
+       -> Proxy l'
+       -> ChoreoSig m (a @ l')
 
-  Cond  :: (Show a, Read a, KnownSymbol l) =>
-           Proxy l -> a @ l -> (a -> Choreo m b) -> ChoreoSig m b
+  Cond :: (Show a, Read a, KnownSymbol l)
+       => Proxy l
+       -> a @ l
+       -> (a -> Choreo m b)
+       -> ChoreoSig m b
 
+-- | Monad for writing choreographies.
 type Choreo m = Freer (ChoreoSig m)
 
+-- | Run a `Choreo` monad directly.
 runChoreo :: Monad m => Choreo m a -> m a
 runChoreo = interpFreer handler
   where
@@ -37,6 +49,7 @@ runChoreo = interpFreer handler
     handler (Comm _ a _) = return $ (wrap . unwrap) a
     handler (Cond _ a c) = runChoreo $ c (unwrap a)
 
+-- | Endpoint projection.
 epp :: Choreo m a -> LocTm -> Network m a
 epp c l' = interpFreer handler c
   where
@@ -52,31 +65,52 @@ epp c l' = interpFreer handler c
       | toLocTm l == l' = broadcast (unwrap a) >> epp (c (unwrap a)) l'
       | otherwise       = recv (toLocTm l) >>= \x -> epp (c x) l'
 
-  --------------------------------------------------------------------------------
-  -- `Choreo` operators
+-- * Choreo operations
 
-locally :: KnownSymbol l =>
-           Proxy l -> (Unwrap l -> m a) -> Choreo m (a @ l)
+-- | Perform a local computation at a given location.
+locally :: KnownSymbol l
+        => Proxy l           -- ^ Location performing the local computation.
+        -> (Unwrap l -> m a) -- ^ The local computation given a constrained
+                             -- unwrap funciton.
+        -> Choreo m (a @ l)
 locally l m = toFreer (Local l m)
 
-comm :: (Show a, Read a, KnownSymbol l, KnownSymbol l') =>
-        (Proxy l, a @ l) -> Proxy l' -> Choreo m (a @ l')
-comm (l, a) l' = toFreer (Comm l a l')
+-- | Communication between a sender and a receiver.
+(~>) :: (Show a, Read a, KnownSymbol l, KnownSymbol l')
+     => (Proxy l, a @ l)  -- ^ A pair of sender's location and a value located
+                          -- at the sender
+     -> Proxy l'          -- ^ A receiver's location.
+     -> Choreo m (a @ l')
+(~>) (l, a) l' = toFreer (Comm l a l')
 
-(~>) (l, a) l' = (l, a) `comm` l'
+-- | Conditionally execute choregraphies based on a located value.
+cond :: (Show a, Read a, KnownSymbol l)
+     => (Proxy l, a @ l)  -- ^ A pair of a location and a scrutinee located on
+                          -- it.
+     -> (a -> Choreo m b) -- ^ A funciton that describes the follow-up
+                          -- choreographies based on the value of scruniee.
+     -> Choreo m b
+cond (l, a) c = toFreer (Cond l a c)
 
-(~~>) :: (Show a, Read a, KnownSymbol l, KnownSymbol l') =>
-         (Proxy l, Unwrap l -> m a) -> Proxy l' -> Choreo m (a @ l')
+-- | An variant of `~>` that sends the result of a local computation.
+(~~>) :: (Show a, Read a, KnownSymbol l, KnownSymbol l')
+      => (Proxy l, Unwrap l -> m a) -- ^ A pair of sender's location and a local
+                                    -- computation
+      -> Proxy l'                   -- ^ A receiver's location.
+      -> Choreo m (a @ l')
 (~~>) (l, m) l' = do
   x <- l `locally` m
   (l, x) ~> l'
 
-cond :: (Show a, Read a, KnownSymbol l) =>
-        (Proxy l, a @ l) -> (a -> Choreo m b) -> Choreo m b
-cond (l, a) c = toFreer (Cond l a c)
-
-cond' :: (Show a, Read a, KnownSymbol l) =>
-         (Proxy l, Unwrap l -> m a) -> (a -> Choreo m b) -> Choreo m b
+-- | An variant of `cond` that conditonally execute choregraphies based on the
+-- result of a local computation.
+cond' :: (Show a, Read a, KnownSymbol l)
+      => (Proxy l, Unwrap l -> m a) -- ^ A pair of a location and a local
+                                    -- computaiton.
+      -> (a -> Choreo m b)          -- ^ A function that describes the follow-up
+                                    -- choreographies based on the result of the
+                                    -- local computation
+      -> Choreo m b
 cond' (l, m) c = do
   x <- l `locally` m
   cond (l, x) c

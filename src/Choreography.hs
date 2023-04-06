@@ -14,7 +14,6 @@ module Choreography
 
   , Choreo
   , locally
-  , comm
   , (~>)
   , (~~>)
   , cond
