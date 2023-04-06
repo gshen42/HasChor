@@ -5,6 +5,7 @@
 module Main where
 
 import Choreography
+import Data.Proxy
 import GHC.TypeLits (KnownSymbol)
 import Control.Monad
 import Control.Monad.Trans.Class
