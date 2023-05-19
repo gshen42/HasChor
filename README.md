@@ -4,7 +4,7 @@ HasChor is a library for functional choreographic programming in Haskell.
 
 - HasChor provides a monadic interface for choreographic programming where choreographies are expressed as computations in a monad.
 - Based on Haskell's type system, HasChor supports *higher-order choreographies* and *location polymorphism*, both features that enable modularity and code reuse.
-- HasChor's implementation is flexible, extensible, and concise (less than 300 lines of code) thanks to the mixed embedding technique it uses—freer monads, which allows it to reuse existing Haskell constructs as much as possible while interpreting choreographic primitives freely.
+- HasChor's implementation is flexible, extensible, and concise (less than 300 lines of code) thanks to its mixed embedding technique — freer monads, allowing it to reuse existing Haskell constructs as much as possible while interpreting choreographic primitives freely.
 
 See our [ICFP 2023 paper (preprint)](https://arxiv.org/abs/2303.00924) for more deatils.
 For API specifications, check out the [documentation](https://gshen42.github.io/HasChor/).
