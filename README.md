@@ -20,7 +20,7 @@ HasChor is tested with the following Haskell environment:
 
 We recommend using [GHCup](https://www.haskell.org/ghcup/) to set up the environment.
 
-### Writing a simple choreography
+### Getting Started
 
 *We're working on putting HasChor on Hackage.*
 Right now, the easiest way to try out HasChor is to write your program inside HasChor's repo and list it as an executable in the [`HasChor.cabal`](HasChor.cabal) file.
