@@ -79,6 +79,16 @@ executable diffiehellman
         time ^>= 1.11.1.1,
         random ^>= 1.2.1.1
 
+executable karatsuba
+    hs-source-dirs:   examples/karatsuba
+    main-is:          Main.hs
+    default-language: GHC2021
+    build-depends:
+        HasChor,
+        async ^>= 2.2.4,
+        base ^>= 4.16.3.0,
+        containers ^>= 0.6.5.1
+
 executable kvs1
     hs-source-dirs:   examples/kvs-1-simple
     main-is:          Main.hs
