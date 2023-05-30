@@ -137,3 +137,11 @@ executable ring-leader
         HasChor,
         base ^>= 4.16.3.0,
         transformers ^>= 0.5.6.2
+
+executable playground
+    hs-source-dirs:   examples/playground
+    main-is:          Main.hs
+    default-language: GHC2021
+    build-depends:
+        HasChor,
+        base ^>= 4.16.3.0,

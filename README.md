@@ -132,8 +132,14 @@ Types and Programming Languages
 > The book will be delivered on 2022-12-19
 ```
 
-## Write your own choreography
+## Writing your own choreography
 
-TODO
+The easist way to write your choreography is to use the [`playground`](examples/playground)
+example where we provide a template for writing your own chreography.
+Edit the [`Main.hs`](examples/playground/Main.hs) file and run the chreography as follows:
+
+```bash
+cabal run playground <location>
+```
 
 ## Note for artifact evaluation
