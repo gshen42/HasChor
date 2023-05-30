@@ -248,4 +248,6 @@ To run the (location-polymorphic and higher-order) double-backup key-value store
 
 #### Step 2.3: Brief tour of the implementation
 
-[TODO: mention which parts of section 5 are in which files.]
+If artifact reviewers wish to look at the implementation of the HasChor library itself, here is a mapping from parts of section 5 of the paper to files in the repository:
+
+[TODO ...]
