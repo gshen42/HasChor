@@ -41,24 +41,22 @@ For a general introduction to choreographic programming, we recommend
   - [`kvs-3-hoc`](examples/kvs-3-hoc) defines a higher-ordered key-value store that abstracts over replication strategies.
   - [`kvs-4-location-polymorphism`](examples/kvs-4-location-polymorphism) defines a key-value store that utilizes a location-polymorphic function to support 2 backups.
 
-## Getting started
+## Building the library
 
 HasChor is a Haskell library and built with the Glasgow Haskell Compiler (GHC).
-The first thing to do is to build HasChor; you can either [build from the source](#building-from-the-source)
-or [use the Docker image](#using-the-docker-image).
-After successfully building HasChor, you can run example choreographies or write your own choreography.
+You can either [build from the source](#building-from-the-source) or [use the Docker image](#using-the-docker-image).
 
 ### Building from the source
 
 HasChor is tested with the following Haskell environment:
 
 - [GHC](https://www.haskell.org/ghc/) (9.2.6)
-
 - [Cabal](https://www.haskell.org/cabal/) (3.6.2.0)
 
+Newer versions might work but areographical not guaranteed.
 We recommend using [GHCup](https://www.haskell.org/ghcup/) to set up the environment.
 
-To build HasChor, run the following commands:
+To build HasChor, do:
 
 ```bash
 git clone https://github.com/gshen42/HasChor.git
@@ -84,27 +82,26 @@ docker run -it -name foo haschor bash
 
 You should be presented with HasChor's root directory with everything built.
 
-To create another Bash shell in the container for running and testing
-choreographies, use the following command:
+To create another Bash shell in the container for running and testing choreographies, do:
 
 ```bash
 docker exec -it foo bash
 ```
 
-To remove the created container, use the following command:
+To remove the created container, do:
 
 ```bash
 docker rm foo
 ```
 
-### Running example choreographies
+## Running example choreographies
 
 HasChor comes with a set of illustrative examples located in the `examples` directory.
 Use `cabal run <executable-name>` to build and run the examples.
 The executable name for each example can be found in the [`HasChor.cabal`](HasChor.cabal) file.
 
-### Write your own choreography
+## Write your own choreography
 
 TODO
 
-## Notes for artifact evaluation
+## Note for artifact evaluation
