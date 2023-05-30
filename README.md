@@ -96,9 +96,41 @@ docker rm foo
 
 ## Running example choreographies
 
-HasChor comes with a set of illustrative examples located in the `examples` directory.
-Use `cabal run <executable-name>` to build and run the examples.
-The executable name for each example can be found in the [`HasChor.cabal`](HasChor.cabal) file.
+HasChor comes with a set of illustrative example choreographies located in the [`examples`](examples) directory.
+To run these examples, do:
+
+```bash
+cabal run <executable-name> <location>
+```
+
+The `<executable-name>` for each example can be found in the executable section of the [`HasChor.cabal`](HasChor.cabal) file,
+and they usually match with their directory name in [`examples`](examples).
+
+The `<location>` specifies what location the choreography should be projected to and run.
+In most cases, you would open up multiple shells and run the choreography with a participating location in each of them to simulate a distributed system.
+It is crucial that you run the choreography with all participanting locations and roughly at the same time, otherwise the system would deadlock or throw an error.
+Most examples come with a `README.md` in their directory that details the commands to run them properly.
+
+As an example, here we show how to run the [`bookseller-1-simple`](examples/bookseller-1-simple) example.
+First, check out the [`README.md`](examples/bookseller-1-simple/README.md) for general information about the example.
+To run the example, do:
+
+```bash
+# in shell 1
+cabal run bookseller-1-simple buyer
+
+# in shell 2
+cabal run bookseller-1-simple seller
+
+# shell 1 will prompt the user to type in the book they want to buy
+# and we type in "Types and Programming Languages"
+> Enter the title of the book to buy
+Types and Programming Languages
+
+# shell 1 will return the delivery date it receives from the seller
+# then both programs terminate
+> The book will be delivered on 2022-12-19
+```
 
 ## Write your own choreography
 
