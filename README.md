@@ -143,3 +143,21 @@ cabal run playground <location>
 ```
 
 ## Note for artifact evaluation
+
+### Step 1: Obtainning and building the artifact
+
+### Step 2: Running the examples from the paper
+
+Here we show where to find the examples corresponding to the each figure in the paper:
+
+- Fig 1 and Fig 2: 
+- Fig 3:
+- Fig 4:
+- Fig 5:
+- Fig 6:
+- Fig 7 and Fig 8:
+- Fig 9:
+- Fig 10:
+- Fig 11:
+- Fig 12:
+- Fig 13:
