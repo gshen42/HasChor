@@ -154,7 +154,12 @@ In this step we describe how to run each of the examples from our paper.  Most o
 
 #### Step 2.1: Bookseller examples
 
-To run the simple, non-choreographic "bookseller" example from the paper (shown in Figures 1 and 2), open two terminals and then run the following commands from the project directory:
+These examples use a protocol that defines an interaction between two participants: a seller and a (would-be) buyer. The protocol
+begins with the buyer sending the title of a book they want to buy to the seller. The seller replies with the book’s price,
+and the buyer checks if the price is within their budget. If the buyer can afford the book, they inform the seller and get
+back a delivery date; otherwise, they tell the seller they will not buy the book.
+
+To run a simple, non-choreographic "bookseller" example from the paper (shown in Figures 1 and 2), open two terminals and then run the following commands from the project directory:
 
 ```bash
 # in shell 1
@@ -162,13 +167,17 @@ cabal run bookseller-1-simple buyer
 
 # in shell 2
 cabal run bookseller-1-simple seller
+```
 
+The buyer can then interact by typing in the name of the book they want to buy.  For example:
+
+```bash
 # shell 1 will prompt the user to type in the book they want to buy
 # and we type in "Types and Programming Languages"
 > Enter the title of the book to buy
 Types and Programming Languages
 
-# shell 1 will return the delivery date it receives from the seller
+# shell 1 will return the delivery date it receives from the seller,
 # then both programs terminate
 > The book will be delivered on 2022-12-19
 ```
@@ -187,17 +196,51 @@ Finally, to run the location-polymorphic choreographic bookseller example from t
 
 #### Step 2.2: Key-value store examples
 
+These examples use a protocol for a key-value store (KVS).  A client sends requests to a server, and the server handles requests and sends responses back to the client. The server supports two kinds of Requests: `PUT`, to set a given key-value pair, and `GET`, to look
+up the value associated with a specified key.
+
+Both the client and server run in an infinite loop waiting for commands.
+
+##### Simple KVS
+
 To run the simple choreographic key-value store example from the paper (shown in Figures 7 and 8):
 
-[TODO ...]
+```bash
+# start server
+cabal run kvs1 server
+# on a different terminal for client
+cabal run kvs1 client
+```
+
+The client will then be prompted for a command, and the user can input `PUT` and `GET` commands.  An example interaction on the client side might look like the following:
+
+```bash
+# on the client terminal
+Command?
+GET hello
+> Nothing
+Command?
+PUT hello world
+> Just "world"
+Command?
+GET hello
+> Just "world"
+```
+
+##### Primary-backup KVS
 
 To run the primary-backup key-value store example from the paper (shown in Figure 9):
 
 [TODO ...]
 
+##### Higher-order KVS
+
+
 To run the higher-order key-value store example from the paper (shown in Figure 10):
 
 [TODO ...]
+
+##### Location-polymorphic and higher-order KVS
 
 To run the (location-polymorphic and higher-order) double-backup key-value store example from the paper (shown in Figures 11 and 12):
 
