@@ -142,22 +142,67 @@ Edit the [`Main.hs`](examples/playground/Main.hs) file and run the chreography a
 cabal run playground <location>
 ```
 
-## Note for artifact evaluation
+## Notes for artifact evaluation
 
-### Step 1: Obtainning and building the artifact
+### Step 1: Obtaining and building the artifact
+
+[add instructions from above]
 
 ### Step 2: Running the examples from the paper
 
-Here we show where to find the examples corresponding to the each figure in the paper:
+In this step we describe how to run each of the examples from our paper.  Most of the examples are interactive programs requiring command-line inputs from the user, so this is not a "press one key and walk away" step.
 
-- Fig 1 and Fig 2: 
-- Fig 3:
-- Fig 4:
-- Fig 5:
-- Fig 6:
-- Fig 7 and Fig 8:
-- Fig 9:
-- Fig 10:
-- Fig 11:
-- Fig 12:
-- Fig 13:
+#### Step 2.1: Bookseller examples
+
+To run the simple, non-choreographic "bookseller" example from the paper (shown in Figures 1 and 2), open two terminals and then run the following commands from the project directory:
+
+```bash
+# in shell 1
+cabal run bookseller-1-simple buyer
+
+# in shell 2
+cabal run bookseller-1-simple seller
+
+# shell 1 will prompt the user to type in the book they want to buy
+# and we type in "Types and Programming Languages"
+> Enter the title of the book to buy
+Types and Programming Languages
+
+# shell 1 will return the delivery date it receives from the seller
+# then both programs terminate
+> The book will be delivered on 2022-12-19
+```
+
+Next, to run the simple choreographic bookseller example from the paper (shown in Figures 3 and 4):
+
+[TODO ...]
+
+To run the higher-order choreographic bookseller example from the paper (shown in Figure 5):
+
+[TODO ...]
+
+Finally, to run the location-polymorphic choreographic bookseller example from the paper (shown in Figure 6):
+
+[TODO ...]
+
+#### Step 2.2: Key-value store examples
+
+To run the simple choreographic key-value store example from the paper (shown in Figures 7 and 8):
+
+[TODO ...]
+
+To run the primary-backup key-value store example from the paper (shown in Figure 9):
+
+[TODO ...]
+
+To run the higher-order key-value store example from the paper (shown in Figure 10):
+
+[TODO ...]
+
+To run the (location-polymorphic and higher-order) double-backup key-value store example from the paper (shown in Figures 11 and 12):
+
+[TODO ...]
+
+#### Step 2.3: Brief tour of the implementation
+
+[TODO: mention which parts of section 5 are in which files.]
