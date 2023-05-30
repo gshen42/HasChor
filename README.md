@@ -22,6 +22,25 @@ For a general introduction to choreographic programming, we recommend
 [Fabrizio Montesi](https://www.fabriziomontesi.com)'s excellent book:
 [Introduction to Choreographies](https://www.fabriziomontesi.com/introduction-to-choreographies/).
 
+## Directory structure
+
+- [`src`](src) is the root directory of HasChor library.
+  - [`Control/Monad/Freer.hs`](src/Control/Monad/Freer.hs) defines the `Freer` monad.
+  - [`Choreography.hs`](src/Choreography.hs) defines the top-level interface to the library.
+  - [`Choreography/Location.hs`](src/Choreography/Location.hs) defines type-level and term-level locations: `LocTy` and `LocTm`.
+  - [`Choreography/Network.hs`](src/Choreography/Network.hs) defines the `Network` monad and the `Backend` typeclass.
+  - [`Choreography/Network/Local.hs`](src/Choreography/Network/Local.hs) defines the local multi-threaded backend.
+  - [`Choreography/Network/Http.hs`](src/Choreography/Network/Http.hs) defines the HTTP backend.
+  - [`Choreography/Choreo.hs`](src/Choreography/Choreo.hs) defines the `Choreo` monad and the `epp` funciton.
+- [`examples`](examples) is the root directory of HasChor examples.
+  - [`bookseller-0-network`](examples/bookseller-0-network) defines the bookseller protocol as seperate network programs.
+  - [`bookseller-1-simple`](examples/bookseller-1-simple) defines the bookseller protocol as a simple choreography.
+  - [`bookseller-2-higher-order`](examples/bookseller-2-higher-order) defines the bookseller protocol as a higher-ordered choreography.
+  - [`kvs-1-simple`](examples/kvs-1-simple) defines a simple client-server key-value store.
+  - [`kvs-2-primary`](examples/kvs-2-primary) defines a key-value store with a single backup.
+  - [`kvs-3-hoc`](examples/kvs-3-hoc) defines a higher-ordered key-value store that abstracts over replication strategies.
+  - [`kvs-4-location-polymorphism`](examples/kvs-4-location-polymorphism) defines a key-value store that utilizes a location-polymorphic function to support 2 backups.
+
 ## Getting started
 
 HasChor is a Haskell library and built with the Glasgow Haskell Compiler (GHC).
@@ -88,6 +107,4 @@ The executable name for each example can be found in the [`HasChor.cabal`](HasCh
 
 TODO
 
-## Special notes for artificial evluation
-
-### Directory structure
+## Notes for artifact evaluation
