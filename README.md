@@ -184,7 +184,7 @@ deliveryDateOf "Homotopy Type Theory"            = fromGregorian 2023 01 01
 
 It's straightforward to extend these definitions and make them total.
 
-We also assume the user's `budget` is `100`.
+By default, the buyer's `budget` is set to `100`.
 
 ##### Bookseller as individual network programs
 
