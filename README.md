@@ -152,6 +152,7 @@ cabal run playground <location>
 ### Step 1: Obtaining and building the artifact
 
 See [Building the library](#building-the-library) from above.
+The following steps assume the reviewer is in the root directory of the repo.
 
 ### Step 2: Running the examples from the paper
 
@@ -232,7 +233,7 @@ Homotopy Type Theory
 > The book's price is out of the budget
 ```
 
-#### Higher-order bookserll
+#### Higher-order bookseller
 
 To run the higher-order choreographic bookseller example from the paper (shown in Figure 5) with `mkDecision2`:
 
