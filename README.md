@@ -9,12 +9,13 @@ choreographies are expressed as computations in a monad.
 and *location polymorphism*, both features that enable modularity and code
 reuse.
 
-- HasChor's implementation is flexible, extensible, and concise (less than 300
-lines of code) thanks to the mixed embedding technique it uses—freer monads,
-which allows it to reuse existing Haskell constructs as much as possible while
+- HasChor's implementation is flexible, extensible, and concise (less than 150
+lines of code for the core implementation; the swappable backends add another 150 lines)
+thanks to the mixed embedding technique it uses. Freer monads
+let us reuse existing Haskell constructs as much as possible while
 interpreting choreographic primitives freely.
 
-See our [ICFP 2023 paper (preprint)](https://arxiv.org/abs/2303.00924) for more deatils.
+See our [ICFP 2023 paper (preprint)](https://arxiv.org/abs/2303.00924) for more details.
 For API specifications, check out the [documentation](https://gshen42.github.io/HasChor/).
 
 HasChor's design is heavily influenced by [Pirouette](https://dl.acm.org/doi/10.1145/3498684).
@@ -31,12 +32,12 @@ For a general introduction to choreographic programming, we recommend
   - [`Choreography/Network.hs`](src/Choreography/Network.hs) defines the `Network` monad and the `Backend` typeclass.
   - [`Choreography/Network/Local.hs`](src/Choreography/Network/Local.hs) defines the local multi-threaded backend.
   - [`Choreography/Network/Http.hs`](src/Choreography/Network/Http.hs) defines the HTTP backend.
-  - [`Choreography/Choreo.hs`](src/Choreography/Choreo.hs) defines the `Choreo` monad and the `epp` funciton.
+  - [`Choreography/Choreo.hs`](src/Choreography/Choreo.hs) defines the `Choreo` monad and the `epp` function.
 - [`examples`](examples) is the root directory of HasChor examples.
   - [`bank-2pc`](examples/bank-2pc) defines a two-phase commit bank.
-  - [`bookseller-0-network`](examples/bookseller-0-network) defines the bookseller protocol as seperate network programs.
+  - [`bookseller-0-network`](examples/bookseller-0-network) defines the bookseller protocol as separate network programs.
   - [`bookseller-1-simple`](examples/bookseller-1-simple) defines the bookseller protocol as a simple choreography.
-  - [`bookseller-2-higher-order`](examples/bookseller-2-higher-order) defines the bookseller protocol as a higher-ordered choreography.
+  - [`bookseller-2-higher-order`](examples/bookseller-2-higher-order) defines the bookseller protocol as a higher-order choreography.
   - [`bookseller-3-loc-poly`](examples/bookseller-3-loca-poly) defines a location-polymorphic bookseller protocol.
   - [`diffiehellman`](examples/diffiehellman) defines the diffie-hellman key exchange protocol.
   - [`kvs-1-simple`](examples/kvs-1-simple) defines a simple client-server key-value store.
@@ -59,7 +60,7 @@ HasChor is tested with the following Haskell environment:
 - [GHC](https://www.haskell.org/ghc/) (9.2.6)
 - [Cabal](https://www.haskell.org/cabal/) (3.6.2.0)
 
-Newer versions might work but areographical not guaranteed.
+Newer versions might work but are not guaranteed.
 We recommend using [GHCup](https://www.haskell.org/ghcup/) to set up the environment.
 
 To build HasChor, do:
@@ -140,7 +141,7 @@ Types and Programming Languages
 ## Writing your own choreography
 
 The easist way to write your choreography is to use the [`playground`](examples/playground)
-example where we provide a template for writing your own chreography.
+example where we provide a template for writing your own choreography.
 Edit the [`Main.hs`](examples/playground/Main.hs) file and run the chreography as follows:
 
 ```bash
@@ -169,8 +170,8 @@ replies with the book’s price, and the buyer checks if the price is within the
 budget. If the buyer can afford the book, they inform the seller and get back a
 delivery date; otherwise, they tell the seller they will not buy the book.
 
-In these examples, we assume the only books that a buy can buy are "Types and
-Programming Languages" and "Homotopy Type Theory" as `priceOf` and `deliveryOf`
+In these examples, we assume the only books that a buyer can buy are "Types and
+Programming Languages" and "Homotopy Type Theory", as `priceOf` and `deliveryOf`
 are partial functions:
 
 ```haskell
@@ -259,8 +260,8 @@ Homotopy Type Theory
 The book will be delivered on 2023-01-01
 ```
 
-Note previously, the buyer can't buy `Homotopy Type Theory` as it's out of the
-budget, but with buyer2's contribution, now it can.
+Note that previously, the buyer couldn't buy `Homotopy Type Theory` as it was out of the
+budget, but with buyer2's contribution, now they can.
 
 #### Location-polymorphic bookseller
 
@@ -283,9 +284,9 @@ Types and Programming Languages
 
 #### Step 2.2: Key-value store examples
 
-These examples use a protocol for a key-value store (KVS). A client sends
+These examples define a protocol for a key-value store (KVS). A client sends
 requests to a server, and the server handles requests and sends responses back
-to the client. The server supports two kinds of Requests: `PUT`, to set a given
+to the client. The server supports two kinds of requests: `PUT`, to set a given
 key-value pair, and `GET`, to look up the value associated with a specified key.
 
 Both the client and server run in an infinite loop waiting for commands.
