@@ -33,13 +33,19 @@ For a general introduction to choreographic programming, we recommend
   - [`Choreography/Network/Http.hs`](src/Choreography/Network/Http.hs) defines the HTTP backend.
   - [`Choreography/Choreo.hs`](src/Choreography/Choreo.hs) defines the `Choreo` monad and the `epp` funciton.
 - [`examples`](examples) is the root directory of HasChor examples.
+  - [`bank-2pc`](examples/bank-2pc) defines a two-phase commit bank.
   - [`bookseller-0-network`](examples/bookseller-0-network) defines the bookseller protocol as seperate network programs.
   - [`bookseller-1-simple`](examples/bookseller-1-simple) defines the bookseller protocol as a simple choreography.
   - [`bookseller-2-higher-order`](examples/bookseller-2-higher-order) defines the bookseller protocol as a higher-ordered choreography.
+  - [`bookseller-3-loc-poly`](examples/bookseller-3-loca-poly) defines a location-polymorphic bookseller protocol.
+  - [`diffiehellman`](examples/diffiehellman) defines the diffie-hellman key exchange protocol.
   - [`kvs-1-simple`](examples/kvs-1-simple) defines a simple client-server key-value store.
   - [`kvs-2-primary`](examples/kvs-2-primary) defines a key-value store with a single backup.
-  - [`kvs-3-hoc`](examples/kvs-3-hoc) defines a higher-ordered key-value store that abstracts over replication strategies.
-  - [`kvs-4-location-polymorphism`](examples/kvs-4-location-polymorphism) defines a key-value store that utilizes a location-polymorphic function to support 2 backups.
+  - [`kvs-3-higher-order`](examples/kvs-3-higher-order) defines a higher-ordered key-value store that abstracts over replication strategies.
+  - [`kvs-4-loc-poly`](examples/kvs-4-loc-poly) defines a key-value store that utilizes a location-polymorphic function to support 2 backups.
+  - [`mergesort`](examples/mergesort) defines a three-way concurrent merge sort.
+  - [`playground`](examples/playground) defines a template for wirting your own choreography.
+  - [`ring-leader`](examples/ring-leader) defines an experimental ring leader election protocol.
 
 ## Building the library
 
