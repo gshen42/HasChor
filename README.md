@@ -220,10 +220,10 @@ in Figures 3 and 4) with a book different than before:
 
 ```bash
 # in shell 1
-cabal run bookseller-1-network buyer
+cabal run bookseller-1-simple buyer
 
 # in shell 2
-cabal run bookseller-1-network seller
+cabal run bookseller-1-simple seller
 
 # in shell 1
 > Enter the title of the book to buy
@@ -268,10 +268,10 @@ Finally, to run the location-polymorphic choreographic bookseller example from t
 
 ```bash
 # in shell 1
-cabal run bookseller-2-loc-poly buyer
+cabal run bookseller-3-loc-poly buyer
 
 # in shell 2
-cabal run bookseller-2-loc-poly seller
+cabal run bookseller-3-loc-poly seller
 
 # in shell 1
 > Enter the title of the book to buy
