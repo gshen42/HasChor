@@ -20,13 +20,13 @@ change the line `choreo = bookseller mkDecisiont2` to `choreo = bookseller mkDec
 
 ```bash
 # in shell 1
-cabal run bookseller-higher-ordered buyer
+cabal run bookseller-2-higher-order buyer
 
 # in shell 2
-cabal run bookseller-higher-orderer buyer2
+cabal run bookseller-2-higher-order buyer2
 
 # in shell 3
-cabal run bookseller-higher-ordered seller
+cabal run bookseller-2-higher-order seller
 
 # in shell 1
 > Enter the title of the book to buy
