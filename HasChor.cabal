@@ -69,6 +69,15 @@ executable bookseller-2-higher-order
         base ^>= 4.16.3.0,
         time ^>= 1.11.1.1
 
+executable bookseller-3-loc-poly
+    hs-source-dirs:   examples/bookseller-3-loc-poly
+    main-is:          Main.hs
+    default-language: GHC2021
+    build-depends:
+        HasChor,
+        base ^>= 4.16.3.0,
+        time ^>= 1.11.1.1
+
 executable diffiehellman
     hs-source-dirs:   examples/diffiehellman
     main-is:          Main.hs
