@@ -109,7 +109,7 @@ executable kvs2
         containers ^>= 0.6.5.1
 
 executable kvs3
-    hs-source-dirs:   examples/kvs-3-hoc
+    hs-source-dirs:   examples/kvs-3-higher-order
     main-is:          Main.hs
     default-language: GHC2021
     build-depends:
@@ -119,7 +119,7 @@ executable kvs3
         containers ^>= 0.6.5.1
 
 executable kvs4
-    hs-source-dirs:   examples/kvs-4-location-polymorphism
+    hs-source-dirs:   examples/kvs-4-loc-poly
     main-is:          Main.hs
     default-language: GHC2021
     build-depends:
