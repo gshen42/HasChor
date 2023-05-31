@@ -129,7 +129,6 @@ cabal run bookseller-1-simple buyer
 cabal run bookseller-1-simple seller
 
 # shell 1 will prompt the user to type in the book they want to buy
-# and we type in "Types and Programming Languages"
 > Enter the title of the book to buy
 Types and Programming Languages
 
@@ -152,64 +151,148 @@ cabal run playground <location>
 
 ### Step 1: Obtaining and building the artifact
 
-[add instructions from above]
+See [Building the library](#building-the-library) from above.
 
 ### Step 2: Running the examples from the paper
 
-In this step we describe how to run each of the examples from our paper.  Most of the examples are interactive programs requiring command-line inputs from the user, so this is not a "press one key and walk away" step.
+In this step we describe how to run each of the examples from our paper. Most of
+the examples are interactive programs requiring command-line inputs from the
+user, so this is not a "press one key and walk away" step.
 
 #### Step 2.1: Bookseller examples
 
-These examples use a protocol that defines an interaction between two participants: a seller and a (would-be) buyer. The protocol
-begins with the buyer sending the title of a book they want to buy to the seller. The seller replies with the book’s price,
-and the buyer checks if the price is within their budget. If the buyer can afford the book, they inform the seller and get
-back a delivery date; otherwise, they tell the seller they will not buy the book.
+These examples use a protocol that defines an interaction between two
+participants: a seller and a (would-be) buyer. The protocol begins with the
+buyer sending the title of a book they want to buy to the seller. The seller
+replies with the book’s price, and the buyer checks if the price is within their
+budget. If the buyer can afford the book, they inform the seller and get back a
+delivery date; otherwise, they tell the seller they will not buy the book.
 
-To run a simple, non-choreographic "bookseller" example from the paper (shown in Figures 1 and 2), open two terminals and then run the following commands from the project directory:
+In these examples, we assume the only books that a buy can buy are "Types and
+Programming Languages" and "Homotopy Type Theory" as `priceOf` and `deliveryOf`
+are partial functions:
+
+```haskell
+priceOf :: String -> Int
+priceOf "Types and Programming Languages" = 80
+priceOf "Homotopy Type Theory"            = 120
+
+deliveryDateOf :: String -> Day
+deliveryDateOf "Types and Programming Languages" = fromGregorian 2022 12 19
+deliveryDateOf "Homotopy Type Theory"            = fromGregorian 2023 01 01
+```
+
+It's straightforward to extend these definitions and make them total.
+
+We also assume the user's `budget` is `100`.
+
+##### Bookseller as individual network programs
+
+To run a simple, non-choreographic "bookseller" example from the paper (shown in
+Figures 1 and 2), open two shells and then run the following commands from the
+project directory:
 
 ```bash
 # in shell 1
-cabal run bookseller-1-simple buyer
+cabal run bookseller-0-network buyer
 
 # in shell 2
-cabal run bookseller-1-simple seller
+cabal run bookseller-0-network seller
 ```
 
-The buyer can then interact by typing in the name of the book they want to buy.  For example:
+The buyer can then interact by typing in the name of the book they want to
+buy. For example:
 
 ```bash
-# shell 1 will prompt the user to type in the book they want to buy
-# and we type in "Types and Programming Languages"
+# in shell 1
 > Enter the title of the book to buy
 Types and Programming Languages
 
-# shell 1 will return the delivery date it receives from the seller,
-# then both programs terminate
+# in shell 1
 > The book will be delivered on 2022-12-19
 ```
 
-Next, to run the simple choreographic bookseller example from the paper (shown in Figures 3 and 4):
+#### Bookseller as a simple choreography
 
-[TODO ...]
+Next, to run the simple choreographic bookseller example from the paper (shown
+in Figures 3 and 4) with a book different than before:
 
-To run the higher-order choreographic bookseller example from the paper (shown in Figure 5):
+```bash
+# in shell 1
+cabal run bookseller-1-network buyer
 
-[TODO ...]
+# in shell 2
+cabal run bookseller-1-network seller
+
+# in shell 1
+> Enter the title of the book to buy
+Homotopy Type Theory
+
+# in shell 1
+> The book's price is out of the budget
+```
+
+#### Higher-order bookserll
+
+To run the higher-order choreographic bookseller example from the paper (shown in Figure 5) with `mkDecision2`:
+
+```bash
+# in shell 1
+cabal run bookseller-2-higher-order buyer
+
+# in shell 2
+cabal run bookseller-2-higher-order buyer2
+
+# in shell 3
+cabal run bookseller-2-higher-order seller
+
+# in shell 1
+> Enter the title of the book to buy
+Homotopy Type Theory
+
+# in shell 2
+> How much you're willing to contribute?
+100
+
+# in shell 1
+The book will be delivered on 2023-01-01
+```
+
+Note previously, the buyer can't buy `Homotopy Type Theory` as it's out of the
+budget, but with buyer2's contribution, now it can.
+
+#### Location-polymorphic bookseller
 
 Finally, to run the location-polymorphic choreographic bookseller example from the paper (shown in Figure 6):
 
-[TODO ...]
+```bash
+# in shell 1
+cabal run bookseller-2-loc-poly buyer
+
+# in shell 2
+cabal run bookseller-2-loc-poly seller
+
+# in shell 1
+> Enter the title of the book to buy
+Types and Programming Languages
+
+# in shell 1
+> The book will be delivered on 2022-12-19
+```
 
 #### Step 2.2: Key-value store examples
 
-These examples use a protocol for a key-value store (KVS).  A client sends requests to a server, and the server handles requests and sends responses back to the client. The server supports two kinds of Requests: `PUT`, to set a given key-value pair, and `GET`, to look
-up the value associated with a specified key.
+These examples use a protocol for a key-value store (KVS). A client sends
+requests to a server, and the server handles requests and sends responses back
+to the client. The server supports two kinds of Requests: `PUT`, to set a given
+key-value pair, and `GET`, to look up the value associated with a specified key.
 
 Both the client and server run in an infinite loop waiting for commands.
 
 ##### Simple KVS
 
-To run the simple choreographic key-value store example from the paper (shown in Figures 7 and 8):
+To run the simple choreographic key-value store example from the paper (shown in
+Figures 7 and 8):
 
 ```bash
 # start server
@@ -218,7 +301,9 @@ cabal run kvs1 server
 cabal run kvs1 client
 ```
 
-The client will then be prompted for a command, and the user can input `PUT` and `GET` commands.  An example interaction on the client side might look like the following:
+The client will then be prompted for a command, and the user can input `PUT` and
+`GET` commands.  An example interaction on the client side might look like the
+following:
 
 ```bash
 # on the client terminal
@@ -237,23 +322,70 @@ GET hello
 
 To run the primary-backup key-value store example from the paper (shown in Figure 9):
 
-[TODO ...]
+```bash
+# start primary
+cabal run kvs2 primary
+
+# on a different terminal, start backup
+cabal run kvs2 backup
+
+# another terminal for client
+cabal run kvs2 client
+GET hello
+> Nothing
+PUT hello world
+> Just "world"
+GET hello
+> Just "world"
+```
 
 ##### Higher-order KVS
 
 
 To run the higher-order key-value store example from the paper (shown in Figure 10):
 
-[TODO ...]
+```bash
+# start primary
+cabal run kvs3 primary
+
+# on a different terminal, start backup
+cabal run kvs3 backup
+
+# another terminal for client
+cabal run kvs3 client
+GET hello
+> Nothing
+PUT hello world
+> Just "world"
+GET hello
+> Just "world"
+```
 
 ##### Location-polymorphic and higher-order KVS
 
 To run the (location-polymorphic and higher-order) double-backup key-value store example from the paper (shown in Figures 11 and 12):
 
-[TODO ...]
+```bash
+# start primary
+cabal run kvs4 primary
 
-#### Step 2.3: Brief tour of the implementation
+# on a different terminal, start backup1
+cabal run kvs4 backup1
 
-If artifact reviewers wish to look at the implementation of the HasChor library itself, here is a mapping from parts of section 5 of the paper to files in the repository:
+# another terminal for backup2
+cabal run kvs4 backup2
 
-[TODO ...]
+# yet another terminal for client
+cabal run kvs4 client
+GET hello
+> Nothing
+PUT hello world
+> Just "world"
+GET hello
+> Just "world"
+```
+
+### Step 2.3: Brief tour of the implementation
+
+See [Directory structure](#directory-structure) from above.
+
