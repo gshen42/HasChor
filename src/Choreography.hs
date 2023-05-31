@@ -1,6 +1,6 @@
 {-# LANGUAGE ExplicitNamespaces #-}
 
--- | This module defines the interface to HasChor, the client of the library is
+-- | This module defines the interface to HasChor. The client of the library is
 -- highly recommended to only use constructs exported by this module.
 module Choreography (
   -- * Locations and Located Values

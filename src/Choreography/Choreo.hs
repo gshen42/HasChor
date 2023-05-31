@@ -13,8 +13,8 @@ import GHC.TypeLits
 
 -- * The Choreo monad
 
--- | A constrained version of `unwrap` that only unwrap values located at a
--- specifix location
+-- | A constrained version of `unwrap` that only unwraps values located at a
+-- specific location.
 type Unwrap l = forall a. a @ l -> a
 
 -- | Effect signature for the `Choreo` monad. @m@ is a monad that represents
@@ -77,39 +77,39 @@ locally l m = toFreer (Local l m)
 
 -- | Communication between a sender and a receiver.
 (~>) :: (Show a, Read a, KnownSymbol l, KnownSymbol l')
-     => (Proxy l, a @ l)  -- ^ A pair of sender's location and a value located
+     => (Proxy l, a @ l)  -- ^ A pair of a sender's location and a value located
                           -- at the sender
      -> Proxy l'          -- ^ A receiver's location.
      -> Choreo m (a @ l')
 (~>) (l, a) l' = toFreer (Comm l a l')
 
--- | Conditionally execute choregraphies based on a located value.
+-- | Conditionally execute choreographies based on a located value.
 cond :: (Show a, Read a, KnownSymbol l)
      => (Proxy l, a @ l)  -- ^ A pair of a location and a scrutinee located on
                           -- it.
-     -> (a -> Choreo m b) -- ^ A funciton that describes the follow-up
-                          -- choreographies based on the value of scruniee.
+     -> (a -> Choreo m b) -- ^ A function that describes the follow-up
+                          -- choreographies based on the value of scrutinee.
      -> Choreo m b
 cond (l, a) c = toFreer (Cond l a c)
 
--- | An variant of `~>` that sends the result of a local computation.
+-- | A variant of `~>` that sends the result of a local computation.
 (~~>) :: (Show a, Read a, KnownSymbol l, KnownSymbol l')
-      => (Proxy l, Unwrap l -> m a) -- ^ A pair of sender's location and a local
-                                    -- computation
+      => (Proxy l, Unwrap l -> m a) -- ^ A pair of a sender's location and a local
+                                    -- computation.
       -> Proxy l'                   -- ^ A receiver's location.
       -> Choreo m (a @ l')
 (~~>) (l, m) l' = do
   x <- l `locally` m
   (l, x) ~> l'
 
--- | An variant of `cond` that conditonally execute choregraphies based on the
+-- | A variant of `cond` that conditonally executes choregraphies based on the
 -- result of a local computation.
 cond' :: (Show a, Read a, KnownSymbol l)
       => (Proxy l, Unwrap l -> m a) -- ^ A pair of a location and a local
-                                    -- computaiton.
+                                    -- computation.
       -> (a -> Choreo m b)          -- ^ A function that describes the follow-up
                                     -- choreographies based on the result of the
-                                    -- local computation
+                                    -- local computation.
       -> Choreo m b
 cond' (l, m) c = do
   x <- l `locally` m

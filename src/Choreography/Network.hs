@@ -1,5 +1,5 @@
 -- | This module defines the `Network` monad, which represents programs run on
--- individual nodes in a distribute system with explicit sends and receives.
+-- individual nodes in a distributed system with explicit sends and receives.
 -- To run a `Network` program, we provide a `runNetwork` function that supports
 -- multiple message transport backends.
 module Choreography.Network where

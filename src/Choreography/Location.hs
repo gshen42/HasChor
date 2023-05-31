@@ -13,7 +13,7 @@ type LocTm = String
 -- | Type-level locations.
 type LocTy = Symbol
 
--- | Convert a type-level locaiton to a term-level locaiton.
+-- | Convert a type-level location to a term-level location.
 toLocTm :: forall (l :: LocTy). KnownSymbol l => Proxy l -> LocTm
 toLocTm = symbolVal
 

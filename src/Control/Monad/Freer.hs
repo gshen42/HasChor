@@ -13,7 +13,7 @@ import Control.Monad ((>=>))
 data Freer f a where
   -- | A pure computation.
   Return :: a -> Freer f a
-  -- | An effectufl computation where the first argument @f b@ is the effect
+  -- | An effectful computation where the first argument @f b@ is the effect
   -- to perform and returns a result of type @b@; the second argument
   -- @b -> Freer f a@ is a continuation that specifies the rest of the
   -- computation given the result of the performed effect.
