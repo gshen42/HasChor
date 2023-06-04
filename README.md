@@ -57,7 +57,7 @@ You can either [build from the source](#building-from-the-source) or [use the Do
 
 HasChor is tested with the following Haskell environment:
 
-- [GHC](https://www.haskell.org/ghc/) (9.2.6)
+- [GHC](https://www.haskell.org/ghc/) (9.2.8)
 - [Cabal](https://www.haskell.org/cabal/) (3.6.2.0)
 
 Newer versions might work but are not guaranteed.

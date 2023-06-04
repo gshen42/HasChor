@@ -9,7 +9,7 @@ maintainer:         Gan Shen <gan_shen@icloud.com>
 copyright:          (c) Gan Shen 2022
 category:           Concurrency
 tested-with:
-   GHC == 9.2.5
+   GHC == 9.2.8
 
 library
     hs-source-dirs:   src
@@ -23,8 +23,8 @@ library
         Choreography.Network.Local
         Control.Monad.Freer
     build-depends:
-        base ^>= 4.16.3.0,
-        bytestring ^>= 0.11.3.0,
+        base ^>= 4.16.4.0,
+        bytestring ^>= 0.11.4.0,
         http-client ^>= 0.7.13.1,
         servant ^>= 0.19.1,
         servant-client ^>= 0.19,
@@ -38,7 +38,7 @@ executable bank-2pc
     default-language: GHC2021
     build-depends:
         HasChor,
-        base ^>= 4.16.3.0,
+        base ^>= 4.16.4.0,
         time ^>= 1.11.1.1,
         split ^>= 0.2.3.5
 
@@ -48,7 +48,7 @@ executable bookseller-0-network
     default-language: GHC2021
     build-depends:
         HasChor,
-        base ^>= 4.16.3.0,
+        base ^>= 4.16.4.0,
         time ^>= 1.11.1.1
 
 executable bookseller-1-simple
@@ -57,7 +57,7 @@ executable bookseller-1-simple
     default-language: GHC2021
     build-depends:
         HasChor,
-        base ^>= 4.16.3.0,
+        base ^>= 4.16.4.0,
         time ^>= 1.11.1.1
 
 executable bookseller-2-higher-order
@@ -66,7 +66,7 @@ executable bookseller-2-higher-order
     default-language: GHC2021
     build-depends:
         HasChor,
-        base ^>= 4.16.3.0,
+        base ^>= 4.16.4.0,
         time ^>= 1.11.1.1
 
 executable bookseller-3-loc-poly
@@ -75,7 +75,7 @@ executable bookseller-3-loc-poly
     default-language: GHC2021
     build-depends:
         HasChor,
-        base ^>= 4.16.3.0,
+        base ^>= 4.16.4.0,
         time ^>= 1.11.1.1
 
 executable diffiehellman
@@ -84,7 +84,7 @@ executable diffiehellman
     default-language: GHC2021
     build-depends:
         HasChor,
-        base ^>= 4.16.3.0,
+        base ^>= 4.16.4.0,
         time ^>= 1.11.1.1,
         random ^>= 1.2.1.1
 
@@ -94,7 +94,7 @@ executable kvs1
     default-language: GHC2021
     build-depends:
         HasChor,
-        base ^>= 4.16.3.0,
+        base ^>= 4.16.4.0,
         time ^>= 1.11.1.1,
         containers ^>= 0.6.5.1
 
@@ -104,7 +104,7 @@ executable kvs2
     default-language: GHC2021
     build-depends:
         HasChor,
-        base ^>= 4.16.3.0,
+        base ^>= 4.16.4.0,
         time ^>= 1.11.1.1,
         containers ^>= 0.6.5.1
 
@@ -114,7 +114,7 @@ executable kvs3
     default-language: GHC2021
     build-depends:
         HasChor,
-        base ^>= 4.16.3.0,
+        base ^>= 4.16.4.0,
         time ^>= 1.11.1.1,
         containers ^>= 0.6.5.1
 
@@ -124,7 +124,7 @@ executable kvs4
     default-language: GHC2021
     build-depends:
         HasChor,
-        base ^>= 4.16.3.0,
+        base ^>= 4.16.4.0,
         time ^>= 1.11.1.1,
         containers ^>= 0.6.5.1
 
@@ -134,7 +134,7 @@ executable mergesort
     default-language: GHC2021
     build-depends:
         HasChor,
-        base ^>= 4.16.3.0,
+        base ^>= 4.16.4.0,
         time ^>= 1.11.1.1,
         containers ^>= 0.6.5.1
 
@@ -144,7 +144,7 @@ executable ring-leader
     default-language: GHC2021
     build-depends:
         HasChor,
-        base ^>= 4.16.3.0,
+        base ^>= 4.16.4.0,
         transformers ^>= 0.5.6.2
 
 executable playground
@@ -153,4 +153,4 @@ executable playground
     default-language: GHC2021
     build-depends:
         HasChor,
-        base ^>= 4.16.3.0,
+        base ^>= 4.16.4.0,
