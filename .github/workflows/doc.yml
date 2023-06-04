@@ -4,6 +4,7 @@ on:
   # Runs on pushes targeting the default branch
   push:
     branches: ["main"]
+    paths: 'src/**'
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -21,21 +22,54 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # heavily inspired by https://github.com/haskell/actions/tree/main/setup
   build-deploy-doc:
+    name: Build and deploy Haddock
+    runs-on: ubuntu-latest
+
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Set up GHC 9.2.7 and Cabal 3.6.2.0
+      - name: Set up GHC 9.2.8 and Cabal 3.6.2.0
         uses: haskell/actions/setup@v2
+        id: setup
         with:
-          ghc-version: '9.2.7'
+          ghc-version: '9.2.8'
           cabal-version: '3.6.2.0'
           cabal-update: true
+
+      - name: Configure the build
+        run: |
+          cabal configure --enable-tests --enable-benchmarks --disable-documentation
+          cabal build --dry-run
+        # The last step generates dist-newstyle/cache/plan.json for the cache key.
+
+      - name: Restore cached dependencies
+        uses: actions/cache/restore@v3
+        id: cache
+        env:
+          key: ${{ runner.os }}-ghc-${{ steps.setup.outputs.ghc-version }}-cabal-${{ steps.setup.outputs.cabal-version }}
+        with:
+          path: ${{ steps.setup.outputs.cabal-store }}
+          key: ${{ env.key }}-plan-${{ hashFiles('**/plan.json') }}
+          restore-keys: ${{ env.key }}-
+
+      - name: Install dependencies
+        run: cabal build all --only-dependencies
+
+      # Cache dependencies already here, so that we do not have to rebuild them should the subsequent steps fail.
+      - name: Save cached dependencies
+        uses: actions/cache/save@v3
+        # Caches are immutable, trying to save with the same key would error.
+        if: ${{ steps.cache.outputs.cache-primary-key != steps.cache.outputs.cache-matched-key }}
+        with:
+          path: ${{ steps.setup.outputs.cabal-store }}
+          key: ${{ steps.cache.outputs.cache-primary-key }}
 
       - name: Build doc
         run: cabal haddock --haddock-hyperlink-source --haddock-quickjump --haddock-html-location='https://hackage.haskell.org/package/$pkg-$version/docs'
@@ -47,7 +81,7 @@ jobs:
         uses: actions/upload-pages-artifact@v1
         with:
           # FIXME: make cabal output where the generated doc is instaed of hard coding it
-          path: './dist-newstyle/build/x86_64-linux/ghc-9.2.7/HasChor-0.1.0.0/doc/html/HasChor/'
+          path: './dist-newstyle/build/x86_64-linux/ghc-9.2.8/HasChor-0.1.0.0/doc/html/HasChor/'
 
       - name: Deploy to GitHub Pages
         id: deployment
