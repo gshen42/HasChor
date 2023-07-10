@@ -16,14 +16,18 @@ buyer = Proxy
 seller :: Proxy "seller"
 seller = Proxy
 
+-- | `bookseller` is a choreography that implements the bookseller protocol.
+-- This version takes the name of the buyer as a parameter (`someBuyer`).
 bookseller :: KnownSymbol a => Proxy a -> Choreo IO (Maybe Day @ a)
 bookseller someBuyer = do
+  -- the buyer reads the title of the book and sends it to the seller
   title <- (buyer, \_ -> do
                putStrLn "Enter the title of the book to buy"
                getLine
            )
            ~~> seller
 
+  -- the seller checks the price of the book and sends it to the buyer
   price <- (seller, \un -> return $ priceOf (un title)) ~~> someBuyer
 
   cond' (someBuyer, \un -> return $ (un price) < budget) \case
