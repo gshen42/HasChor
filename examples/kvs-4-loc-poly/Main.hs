@@ -38,6 +38,7 @@ data Request = Put String String | Get String deriving (Show, Read)
 
 type Response = Maybe String
 
+-- | `readRequest` reads a request from the terminal.
 readRequest :: IO Request
 readRequest = do
   putStrLn "Command?"
@@ -54,6 +55,7 @@ readRequest = do
             ["PUT", k, v] -> Just (Put k v)
             _ -> Nothing
 
+-- | `handleRequest` handle a request and returns the new the state.
 handleRequest :: Request -> IORef State -> IO Response
 handleRequest request stateRef = case request of
   Put key value -> do
@@ -67,6 +69,7 @@ handleRequest request stateRef = case request of
 -- `a` is a type that represent states across locations
 type ReplicationStrategy a = Request @ "primary" -> a -> Choreo IO (Response @ "primary")
 
+-- | `nullReplicationStrategy` is a replication strategy that does not replicate the state.
 nullReplicationStrategy :: ReplicationStrategy (IORef State @ "primary")
 nullReplicationStrategy request stateRef = do
   primary `locally` \unwrap -> case unwrap request of
@@ -77,6 +80,7 @@ nullReplicationStrategy request stateRef = do
       state <- readIORef (unwrap stateRef)
       return (Map.lookup key state)
 
+-- | `doBackup` relays a mutating request to a backup location.
 doBackup ::
   KnownSymbol a =>
   KnownSymbol b =>
@@ -95,6 +99,7 @@ doBackup locA locB request stateRef = do
     _ -> do
       return ()
 
+-- | `primaryBackupReplicationStrategy` is a replication strategy that replicates the state to a backup server.
 primaryBackupReplicationStrategy :: ReplicationStrategy (IORef State @ "primary", IORef State @ "backup1")
 primaryBackupReplicationStrategy request (primaryStateRef, backupStateRef) = do
   -- relay request to backup if it is mutating (= PUT)
@@ -103,13 +108,14 @@ primaryBackupReplicationStrategy request (primaryStateRef, backupStateRef) = do
   -- process request on primary
   primary `locally` \unwrap -> handleRequest (unwrap request) (unwrap primaryStateRef)
 
+-- | `doubleBackupReplicationStrategy` is a replication strategy that replicates the state to two backup servers.
 doubleBackupReplicationStrategy ::
   ReplicationStrategy
     (IORef State @ "primary", IORef State @ "backup1", IORef State @ "backup2")
 doubleBackupReplicationStrategy
   request
   (primaryStateRef, backup1StateRef, backup2StateRef) = do
-    -- relay to two backup locations in serial
+    -- relay to two backup locations
     doBackup primary backup1 request backup1StateRef
     doBackup primary backup2 request backup2StateRef
 
@@ -117,6 +123,8 @@ doubleBackupReplicationStrategy
     primary `locally` \unwrap ->
       handleRequest (unwrap request) (unwrap primaryStateRef)
 
+-- | `kvs` is a choreography that processes a single request at the client and returns the response.
+-- It uses the provided replication strategy to handle the request.
 kvs :: Request @ "client" -> a -> ReplicationStrategy a -> Choreo IO (Response @ "client")
 kvs request stateRefs replicationStrategy = do
   request' <- (client, request) ~> primary
@@ -127,6 +135,7 @@ kvs request stateRefs replicationStrategy = do
   -- send response to client
   (primary, response) ~> client
 
+-- | `nullReplicationChoreo` is a choreography that uses `nullReplicationStrategy`.
 nullReplicationChoreo :: Choreo IO ()
 nullReplicationChoreo = do
   stateRef <- primary `locally` \_ -> newIORef (Map.empty :: State)
@@ -139,6 +148,7 @@ nullReplicationChoreo = do
       client `locally` \unwrap -> do putStrLn (show (unwrap response))
       loop stateRef
 
+-- | `primaryBackupChoreo` is a choreography that uses `primaryBackupReplicationStrategy`.
 primaryBackupChoreo :: Choreo IO ()
 primaryBackupChoreo = do
   primaryStateRef <- primary `locally` \_ -> newIORef (Map.empty :: State)
@@ -152,6 +162,7 @@ primaryBackupChoreo = do
       client `locally` \unwrap -> do putStrLn (show (unwrap response))
       loop stateRefs
 
+-- | `doubleBackupChoreo` is a choreography that uses `doubleBackupReplicationStrategy`.
 doubleBackupChoreo :: Choreo IO ()
 doubleBackupChoreo = do
   primaryStateRef <- primary `locally` \_ -> newIORef (Map.empty :: State)

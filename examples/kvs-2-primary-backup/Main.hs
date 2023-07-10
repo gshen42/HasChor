@@ -35,6 +35,7 @@ data Request = Put String String | Get String deriving (Show, Read)
 
 type Response = Maybe String
 
+-- | `readRequest` reads a request from the terminal.
 readRequest :: IO Request
 readRequest = do
   putStrLn "Command?"
@@ -51,6 +52,7 @@ readRequest = do
             ["PUT", k, v] -> Just (Put k v)
             _ -> Nothing
 
+-- | `handleRequest` handle a request and returns the new the state.
 handleRequest :: Request -> IORef State -> IO Response
 handleRequest request stateRef = case request of
   Put key value -> do
@@ -60,14 +62,19 @@ handleRequest request stateRef = case request of
     state <- readIORef stateRef
     return (Map.lookup key state)
 
+-- | `kvs` is a choreography that processes a single request located at the client and returns the response.
+-- If the request is a `PUT`, it will forward the request to the backup node.
 kvs ::
   Request @ "client" ->
   (IORef State @ "primary", IORef State @ "backup") ->
   Choreo IO (Response @ "client")
 kvs request (primaryStateRef, backupStateRef) = do
+  -- send request to the primary node
   request' <- (client, request) ~> primary
 
+  -- branch on the request
   cond (primary, request') \case
+    -- if the request is a `PUT`, forward the request to the backup node
     Put key value -> do
       request'' <- (primary, request') ~> backup
       ack <-
@@ -78,7 +85,7 @@ kvs request (primaryStateRef, backupStateRef) = do
     _ -> do
       return ()
 
-  -- process request on primary
+  -- process request on the primary node
   response <-
     primary `locally` \unwrap ->
       handleRequest (unwrap request') (unwrap primaryStateRef)
@@ -86,6 +93,8 @@ kvs request (primaryStateRef, backupStateRef) = do
   -- send response to client
   (primary, response) ~> client
 
+-- | `mainChoreo` is a choreography that serves as the entry point of the program.
+-- It initializes the state and loops forever.
 mainChoreo :: Choreo IO ()
 mainChoreo = do
   primaryStateRef <- primary `locally` \_ -> newIORef (Map.empty :: State)

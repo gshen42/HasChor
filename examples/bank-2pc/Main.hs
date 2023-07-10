@@ -33,13 +33,14 @@ type Action = (String, Int)
 
 type Transaction = [Action]
 
--- check if a transaction can be executed while keeping balance >= 0
+-- | `validate` checks if a transaction can be executed while keeping balance >= 0
 -- returns if the transaction satisfies the property and the balance after the transaction
 validate :: String -> Int -> Transaction -> (Bool, Int)
 validate name balance tx = foldl (\(valid, i) (_, amount) -> (let next = i + amount in (valid && next >= 0, next))) (True, balance) actions
   where
     actions = filter (\(n, _) -> n == name) tx
 
+-- | `parse` converts the user input into a transaction
 parse :: String -> Transaction
 parse s = tx
   where
@@ -52,6 +53,11 @@ parse s = tx
       return (target', amount)
     tx = mapMaybe f t
 
+-- | `handleTransaction` is a choreography that handles a transaction.
+-- Given the current state and a transaction, it will first ask alice and bob to vote,
+-- then it will decide whether to commit the transaction or not.
+-- If the transaction is committed, it will update the state.
+-- Otherwise, it will keep the state unchanged.
 handleTransaction :: State -> Transaction @ "coordinator" -> Choreo IO (Bool @ "coordinator", State)
 handleTransaction (aliceBalance, bobBalance) tx = do
   -- Voting Phase
@@ -60,6 +66,7 @@ handleTransaction (aliceBalance, bobBalance) tx = do
   txb <- (coordinator, tx) ~> bob
   voteBob <- (bob, \unwrap -> do { return $ fst $ validate "bob" (unwrap bobBalance) (unwrap txb) }) ~~> coordinator
 
+  -- Check if the transaction can be committed
   canCommit <- coordinator `locally` \unwrap -> do return $ unwrap voteAlice && unwrap voteBob
 
   -- Commit Phase
@@ -71,6 +78,7 @@ handleTransaction (aliceBalance, bobBalance) tx = do
     False -> do
       return (canCommit, (aliceBalance, bobBalance))
 
+-- | `bank` loops forever and handles transactions.
 bank :: State -> Choreo IO ()
 bank state = do
   client `locally` \_ -> do
@@ -82,9 +90,10 @@ bank state = do
     putStrLn if unwrap committed' then "Committed" else "Not committed"
   alice `locally` \unwrap -> do putStrLn ("Alice's balance: " ++ show (unwrap (fst state')))
   bob `locally` \unwrap -> do putStrLn ("Bob's balance: " ++ show (unwrap (snd state')))
-  bank state'
+  bank state' -- repeat
   return ()
 
+-- | `startBank` is a choreography that initializes the states and starts the bank application.
 startBank :: Choreo IO ()
 startBank = do
   aliceBalance <- alice `locally` \_ -> do return 0
