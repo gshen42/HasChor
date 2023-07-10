@@ -32,7 +32,7 @@ data Request = Put String String | Get String deriving (Show, Read)
 
 type Response = Maybe String
 
--- | Read a request from the terminal
+-- | `readRequest` reads a request from the terminal.
 readRequest :: IO Request
 readRequest = do
   putStrLn "Command?"
@@ -49,6 +49,7 @@ readRequest = do
             ["PUT", k, v] -> Just (Put k v)
             _ -> Nothing
 
+-- | `handleRequest` handle a request and returns the new the state.
 handleRequest :: Request -> IORef State -> IO Response
 handleRequest request stateRef = case request of
   Put key value -> do
@@ -58,17 +59,23 @@ handleRequest request stateRef = case request of
     state <- readIORef stateRef
     return (Map.lookup key state)
 
+-- | `kvs` is a choreography that processes a single request located at the client and returns the response.
 kvs ::
   Request @ "client" ->
   IORef State @ "server" ->
   Choreo IO (Response @ "client")
 kvs request stateRef = do
+  -- send the request to the server
   request' <- (client, request) ~> server
+  -- the server handles the response and creates a response
   response <-
     server `locally` \unwrap ->
       handleRequest (unwrap request') (unwrap stateRef)
+  -- send the response back to the client
   (server, response) ~> client
 
+-- | `mainChoreo` is a choreography that serves as the entry point of the program.
+-- It initializes the state and loops forever.
 mainChoreo :: Choreo IO ()
 mainChoreo = do
   stateRef <- server `locally` \_ -> newIORef (Map.empty :: State)
