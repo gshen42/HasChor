@@ -29,6 +29,7 @@ library
         servant ^>= 0.19.1,
         servant-client ^>= 0.19,
         servant-server ^>= 0.19.2,
+        template-haskell,
         unordered-containers ^>= 0.2.19.1,
         warp ^>= 3.3.23
 
