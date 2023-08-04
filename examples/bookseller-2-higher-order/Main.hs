@@ -1,6 +1,7 @@
-{-# LANGUAGE BlockArguments #-}
-{-# LANGUAGE DataKinds      #-}
-{-# LANGUAGE LambdaCase     #-}
+{-# LANGUAGE BlockArguments  #-}
+{-# LANGUAGE DataKinds       #-}
+{-# LANGUAGE LambdaCase      #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Main where
 
@@ -9,14 +10,9 @@ import Data.Proxy
 import Data.Time
 import System.Environment
 
-buyer :: Proxy "buyer"
-buyer = Proxy
-
-seller :: Proxy "seller"
-seller = Proxy
-
-buyer2 :: Proxy "buyer2"
-buyer2 = Proxy
+$(mkLoc "buyer")
+$(mkLoc "seller")
+$(mkLoc "buyer2")
 
 -- | `bookseller` is a choreography that implements the bookseller protocol.
 -- This version takes a choreography `mkDecision` that implements the decision making process.

@@ -1,6 +1,7 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Main where
 
@@ -14,14 +15,9 @@ import Data.Time
 import GHC.TypeLits (KnownSymbol)
 import System.Environment
 
-primary :: Proxy "primary"
-primary = Proxy
-
-worker1 :: Proxy "worker1"
-worker1 = Proxy
-
-worker2 :: Proxy "worker2"
-worker2 = Proxy
+$(mkLoc "primary")
+$(mkLoc "worker1")
+$(mkLoc "worker2")
 
 quicksort :: (KnownSymbol a, KnownSymbol b, KnownSymbol c) => Proxy a -> Proxy b -> Proxy c -> [Int] @ a -> Choreo IO ([Int] @ a)
 quicksort a b c lst = do

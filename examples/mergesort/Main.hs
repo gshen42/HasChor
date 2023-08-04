@@ -1,6 +1,7 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Main where
 
@@ -18,14 +19,9 @@ divide xs = splitAt lhx xs
   where
     lhx = length xs `div` 2
 
-primary :: Proxy "primary"
-primary = Proxy
-
-worker1 :: Proxy "worker1"
-worker1 = Proxy
-
-worker2 :: Proxy "worker2"
-worker2 = Proxy
+$(mkLoc "primary")
+$(mkLoc "worker1")
+$(mkLoc "worker2")
 
 sort ::
   KnownSymbol a =>

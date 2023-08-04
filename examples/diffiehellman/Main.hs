@@ -1,6 +1,7 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Main where
 
@@ -25,11 +26,8 @@ primeNums :: [Integer]
 primeNums = [x | x <- [2 ..], isPrime x]
 
 -- set up proxies
-alice :: Proxy "alice"
-alice = Proxy
-
-bob :: Proxy "bob"
-bob = Proxy
+$(mkLoc "alice")
+$(mkLoc "bob")
 
 diffieHellman :: Choreo IO (Integer @ "alice", Integer @ "bob")
 diffieHellman = do

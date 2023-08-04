@@ -1,6 +1,7 @@
-{-# LANGUAGE BlockArguments #-}
-{-# LANGUAGE DataKinds      #-}
-{-# LANGUAGE LambdaCase     #-}
+{-# LANGUAGE BlockArguments  #-}
+{-# LANGUAGE DataKinds       #-}
+{-# LANGUAGE LambdaCase      #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Main where
 
@@ -9,11 +10,8 @@ import Data.Proxy
 import Data.Time
 import System.Environment
 
-buyer :: Proxy "buyer"
-buyer = Proxy
-
-seller :: Proxy "seller"
-seller = Proxy
+$(mkLoc "buyer")
+$(mkLoc "seller")
 
 -- | `bookseller` is a choreography that implements the bookseller protocol.
 bookseller :: Choreo IO (Maybe Day @ "buyer")
