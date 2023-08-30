@@ -148,6 +148,15 @@ Edit the [`Main.hs`](examples/playground/Main.hs) file and run the chreography a
 cabal run playground <location>
 ```
 
+If you want to depend on HasChor in your own package, add this to your `cabal.project`.
+
+``` cabal-config
+source-repository-package
+    type: git
+    location: https://github.com/gshen42/HasChor.git
+    branch: main
+```
+
 ## Notes for artifact evaluation
 
 ### Step 1: Obtaining and building the artifact
