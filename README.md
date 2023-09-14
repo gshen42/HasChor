@@ -15,7 +15,7 @@ thanks to the mixed embedding technique it uses. Freer monads
 let us reuse existing Haskell constructs as much as possible while
 interpreting choreographic primitives freely.
 
-See our [ICFP 2023 paper (preprint)](https://arxiv.org/abs/2303.00924) for more details.
+See our [ICFP 2023 paper](https://doi.org/10.1145/3607849) for more details.
 For API specifications, check out the [documentation](https://gshen42.github.io/HasChor/).
 
 HasChor's design is heavily influenced by [Pirouette](https://dl.acm.org/doi/10.1145/3498684).
