@@ -6,6 +6,7 @@ module Choreography.Location where
 import Data.Proxy
 import Data.String
 import GHC.TypeLits
+import Language.Haskell.TH
 
 -- | Term-level locations.
 type LocTm = String
@@ -35,3 +36,10 @@ wrap = Wrap
 unwrap :: a @ l-> a
 unwrap (Wrap a) = a
 unwrap Empty    = error "this should never happen for a well-typed choreography"
+
+-- | Define a location at both type and term levels.
+mkLoc :: String -> Q [Dec]
+mkLoc loc = do
+  let locName = mkName loc
+  let p = mkName "Data.Proxy.Proxy"
+  pure [SigD locName (AppT (ConT p) (LitT (StrTyLit loc))),ValD (VarP locName) (NormalB (ConE p)) []]

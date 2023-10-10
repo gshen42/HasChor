@@ -1,6 +1,7 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Main where
 
@@ -13,14 +14,9 @@ import Data.Proxy
 import GHC.TypeLits (KnownSymbol)
 import System.Environment
 
-primary :: Proxy "primary"
-primary = Proxy
-
-worker1 :: Proxy "worker1"
-worker1 = Proxy
-
-worker2 :: Proxy "worker2"
-worker2 = Proxy
+$(mkLoc "primary")
+$(mkLoc "worker1")
+$(mkLoc "worker2")
 
 data KaratsubaNums = KaratsubaNums
   { splitter :: Integer,

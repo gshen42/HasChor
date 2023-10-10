@@ -1,6 +1,7 @@
-{-# LANGUAGE BlockArguments #-}
-{-# LANGUAGE DataKinds      #-}
-{-# LANGUAGE LambdaCase     #-}
+{-# LANGUAGE BlockArguments  #-}
+{-# LANGUAGE DataKinds       #-}
+{-# LANGUAGE LambdaCase      #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Main where
 
@@ -49,17 +50,10 @@ ringLeader ring = loop ring
           right `locally` \un -> put (max (un labelLeft) (un labelRight))
           return False
 
-nodeA :: Proxy "A"
-nodeA = Proxy
-
-nodeB :: Proxy "B"
-nodeB = Proxy
-
-nodeC :: Proxy "C"
-nodeC = Proxy
-
-nodeD :: Proxy "D"
-nodeD = Proxy
+$(mkLoc "nodeA")
+$(mkLoc "nodeB")
+$(mkLoc "nodeC")
+$(mkLoc "nodeD")
 
 ring = [ Edge nodeA nodeB
        , Edge nodeB nodeC
@@ -75,8 +69,8 @@ main = do
   runStateT (runChoreography config (ringLeader ring) loc) label
   return ()
   where
-    config = mkHttpConfig [ ("A", ("localhost", 4242))
-                          , ("B", ("localhost", 4343))
-                          , ("C", ("localhost", 4444))
-                          , ("D", ("localhost", 4545))
+    config = mkHttpConfig [ ("nodeA", ("localhost", 4242))
+                          , ("nodeB", ("localhost", 4343))
+                          , ("nodeC", ("localhost", 4444))
+                          , ("nodeD", ("localhost", 4545))
                           ]
