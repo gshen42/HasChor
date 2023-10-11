@@ -16,22 +16,22 @@ library
     default-language: GHC2021
     exposed-modules:
         Choreography
-        Choreography.Choreo,
-        Choreography.Location,
-        Choreography.Network,
+        Choreography.Choreo
+        Choreography.Location
+        Choreography.Network
         Choreography.Network.Http
         Choreography.Network.Local
         Control.Monad.Freer
     build-depends:
-        base ^>= 4.16.4.0,
-        bytestring ^>= 0.11.4.0,
-        http-client ^>= 0.7.13.1,
-        servant ^>= 0.19.1,
-        servant-client ^>= 0.19,
-        servant-server ^>= 0.19.2,
-        template-haskell,
-        unordered-containers ^>= 0.2.19.1,
-        warp ^>= 3.3.23
+        , base                 >= 4.16.0.0 && < 4.17.0.0
+        , bytestring           >= 0.11.0.0 && < 0.12.0.0
+        , http-client          >= 0.7.0.0  && < 0.8.0.0
+        , servant              >= 0.19.0   && < 0.20.0
+        , servant-client       >= 0.19     && < 0.20
+        , servant-server       >= 0.19.0   && < 0.20.0
+        , template-haskell     >= 2.18.0.0 && < 2.19.0.0
+        , unordered-containers >= 0.2.0.0  && < 0.3.0.0
+        , warp                 >= 3.3.0    && < 3.4.0
 
 executable bank-2pc
     hs-source-dirs:   examples/bank-2pc
