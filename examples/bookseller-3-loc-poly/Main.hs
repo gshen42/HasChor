@@ -1,7 +1,6 @@
-{-# LANGUAGE BlockArguments  #-}
-{-# LANGUAGE DataKinds       #-}
-{-# LANGUAGE LambdaCase      #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DataKinds      #-}
+{-# LANGUAGE LambdaCase     #-}
 
 module Main where
 
@@ -11,8 +10,11 @@ import Data.Time
 import GHC.TypeLits
 import System.Environment
 
-$(mkLoc "buyer")
-$(mkLoc "seller")
+buyer :: Proxy "buyer"
+buyer = Proxy
+
+seller :: Proxy "seller"
+seller = Proxy
 
 -- | `bookseller` is a choreography that implements the bookseller protocol.
 -- This version takes the name of the buyer as a parameter (`someBuyer`).

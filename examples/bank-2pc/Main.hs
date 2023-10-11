@@ -2,7 +2,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell #-}
 
 module Main where
 
@@ -12,14 +11,21 @@ import Choreography.Location
 import Choreography.Network.Http
 import Data.List.Split (splitOn)
 import Data.Maybe (catMaybes, mapMaybe)
+import Data.Proxy
 import System.Environment
 import Text.Read (readMaybe)
-import Data.Proxy
 
-$(mkLoc "client")
-$(mkLoc "coordinator")
-$(mkLoc "alice")
-$(mkLoc "bob")
+client :: Proxy "client"
+client = Proxy
+
+coordinator :: Proxy "coordinator"
+coordinator = Proxy
+
+alice :: Proxy "alice"
+alice = Proxy
+
+bob :: Proxy "bob"
+bob = Proxy
 
 type State = (Int @ "alice", Int @ "bob")
 

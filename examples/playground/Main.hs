@@ -1,7 +1,6 @@
-{-# LANGUAGE BlockArguments  #-}
-{-# LANGUAGE DataKinds       #-}
-{-# LANGUAGE LambdaCase      #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DataKinds      #-}
+{-# LANGUAGE LambdaCase     #-}
 
 module Main where
 
@@ -11,7 +10,8 @@ import Data.Proxy
 import System.Environment
 
 -- Step 1: Defining locations
-$(mkLoc "alice")
+alice :: Proxy "alice"
+alice = Proxy
 
 -- Step 2: Writing a choreography
 choreography :: Choreo IO (() @ "alice")

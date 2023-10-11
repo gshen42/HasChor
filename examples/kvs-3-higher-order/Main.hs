@@ -2,7 +2,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell #-}
 
 module Main where
 
@@ -21,9 +20,14 @@ import GHC.IORef (IORef (IORef))
 import GHC.TypeLits (KnownSymbol)
 import System.Environment
 
-$(mkLoc "client")
-$(mkLoc "primary")
-$(mkLoc "backup")
+client :: Proxy "client"
+client = Proxy
+
+primary :: Proxy "primary"
+primary = Proxy
+
+backup :: Proxy "backup"
+backup = Proxy
 
 type State = Map String String
 
