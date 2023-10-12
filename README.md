@@ -157,7 +157,7 @@ Finally, we use `runChoreography :: Backend cfg => cfg -> Choreo m a -> String -
 
 ## More Examples
 
-HasChor comes with a set of illustrative examples in the [examples][examples] directory.
+HasChor comes with a set of illustrative examples in the [examples](examples) directory.
 
 ## Further Readings
 
