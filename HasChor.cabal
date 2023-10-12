@@ -9,7 +9,8 @@ maintainer:         Gan Shen <gan_shen@icloud.com>
 copyright:          (c) Gan Shen 2022
 category:           Concurrency
 tested-with:
-   GHC == 9.2.8
+    GHC == 9.4.7
+    GHC == 9.2.8
 
 library
     hs-source-dirs:   src
@@ -23,156 +24,156 @@ library
         Choreography.Network.Local
         Control.Monad.Freer
     build-depends:
-        , base                 >= 4.16.0.0 && < 4.17.0.0
-        , bytestring           >= 0.11.0.0 && < 0.12.0.0
-        , http-client          >= 0.7.0.0  && < 0.8.0.0
-        , servant              >= 0.19.0   && < 0.20.0
-        , servant-client       >= 0.19     && < 0.20
-        , servant-server       >= 0.19.0   && < 0.20.0
-        , template-haskell     >= 2.18.0.0 && < 2.19.0.0
-        , unordered-containers >= 0.2.0.0  && < 0.3.0.0
-        , warp                 >= 3.3.0    && < 3.4.0
+        , base                 >= 4.16.0.0 && < 4.20
+        , bytestring           >= 0.11.0.0 && < 0.13
+        , http-client          >= 0.7.0.0  && < 0.8
+        , servant              >= 0.19.0   && < 0.21
+        , servant-client       >= 0.19     && < 0.21
+        , servant-server       >= 0.19.0   && < 0.21
+        , template-haskell     >= 2.18.0.0 && < 2.22
+        , unordered-containers >= 0.2.0.0  && < 0.3
+        , warp                 >= 3.3.0    && < 3.4
 
 executable bank-2pc
     hs-source-dirs:   examples/bank-2pc
     main-is:          Main.hs
     default-language: GHC2021
     build-depends:
-        HasChor,
-        base ^>= 4.16.4.0,
-        time ^>= 1.11.1.1,
-        split ^>= 0.2.3.5
+        , HasChor
+        , base
+        , time
+        , split
 
 executable bookseller-0-network
     hs-source-dirs:   examples/bookseller-0-network
     main-is:          Main.hs
     default-language: GHC2021
     build-depends:
-        HasChor,
-        base ^>= 4.16.4.0,
-        time ^>= 1.11.1.1
+        , HasChor
+        , base
+        , time
 
 executable bookseller-1-simple
     hs-source-dirs:   examples/bookseller-1-simple
     main-is:          Main.hs
     default-language: GHC2021
     build-depends:
-        HasChor,
-        base ^>= 4.16.4.0,
-        time ^>= 1.11.1.1
+        , HasChor
+        , base
+        , time
 
 executable bookseller-2-higher-order
     hs-source-dirs:   examples/bookseller-2-higher-order
     main-is:          Main.hs
     default-language: GHC2021
     build-depends:
-        HasChor,
-        base ^>= 4.16.4.0,
-        time ^>= 1.11.1.1
+        , HasChor
+        , base
+        , time
 
 executable bookseller-3-loc-poly
     hs-source-dirs:   examples/bookseller-3-loc-poly
     main-is:          Main.hs
     default-language: GHC2021
     build-depends:
-        HasChor,
-        base ^>= 4.16.4.0,
-        time ^>= 1.11.1.1
+        , HasChor
+        , base
+        , time
 
 executable diffiehellman
     hs-source-dirs:   examples/diffiehellman
     main-is:          Main.hs
     default-language: GHC2021
     build-depends:
-        HasChor,
-        base ^>= 4.16.4.0,
-        time ^>= 1.11.1.1,
-        random ^>= 1.2.1.1
+        , HasChor
+        , base
+        , time
+        , random
 
 executable karatsuba
     hs-source-dirs:   examples/karatsuba
     main-is:          Main.hs
     default-language: GHC2021
     build-depends:
-        HasChor,
-        async ^>= 2.2.4,
-        base ^>= 4.16.3.0,
-        containers ^>= 0.6.5.1
+        , HasChor
+        , async
+        , base
+        , containers
 
 executable kvs1
     hs-source-dirs:   examples/kvs-1-simple
     main-is:          Main.hs
     default-language: GHC2021
     build-depends:
-        HasChor,
-        base ^>= 4.16.4.0,
-        time ^>= 1.11.1.1,
-        containers ^>= 0.6.5.1
+        , HasChor
+        , base
+        , time
+        , containers
 
 executable kvs2
     hs-source-dirs:   examples/kvs-2-primary-backup
     main-is:          Main.hs
     default-language: GHC2021
     build-depends:
-        HasChor,
-        base ^>= 4.16.4.0,
-        time ^>= 1.11.1.1,
-        containers ^>= 0.6.5.1
+        , HasChor
+        , base
+        , time
+        , containers
 
 executable kvs3
     hs-source-dirs:   examples/kvs-3-higher-order
     main-is:          Main.hs
     default-language: GHC2021
     build-depends:
-        HasChor,
-        base ^>= 4.16.4.0,
-        time ^>= 1.11.1.1,
-        containers ^>= 0.6.5.1
+        , HasChor
+        , base
+        , time
+        , containers
 
 executable kvs4
     hs-source-dirs:   examples/kvs-4-loc-poly
     main-is:          Main.hs
     default-language: GHC2021
     build-depends:
-        HasChor,
-        base ^>= 4.16.4.0,
-        time ^>= 1.11.1.1,
-        containers ^>= 0.6.5.1
+        , HasChor
+        , base
+        , time
+        , containers
 
 executable mergesort
     hs-source-dirs:   examples/mergesort
     main-is:          Main.hs
     default-language: GHC2021
     build-depends:
-        HasChor,
-        base ^>= 4.16.4.0,
-        time ^>= 1.11.1.1,
-        containers ^>= 0.6.5.1
+        , HasChor
+        , base
+        , time
+        , containers
 
 executable quicksort
     hs-source-dirs:   examples/quicksort
     main-is:          Main.hs
     default-language: GHC2021
     build-depends:
-        HasChor,
-        base ^>= 4.16.3.0,
-        time ^>= 1.11.1.1,
-        containers ^>= 0.6.5.1,
-        async ^>= 2.2.4
+        , HasChor
+        , base
+        , time
+        , containers
+        , async
 
 executable ring-leader
     hs-source-dirs:   examples/ring-leader
     main-is:          Main.hs
     default-language: GHC2021
     build-depends:
-        HasChor,
-        base ^>= 4.16.4.0,
-        transformers ^>= 0.5.6.2
+        , HasChor
+        , base
+        , transformers
 
 executable playground
     hs-source-dirs:   examples/playground
     main-is:          Main.hs
     default-language: GHC2021
     build-depends:
-        HasChor,
-        base ^>= 4.16.4.0,
+        , HasChor
+        , base
