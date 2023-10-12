@@ -1,7 +1,7 @@
 cabal-version:      2.4
 name:               HasChor
 version:            0.1.0.0
-synopsis:           Choreographic programming in Haskell
+synopsis:           Functional choreographic programming in Haskell
 license:            BSD-3-Clause
 license-file:       LICENSE
 author:             Gan Shen
