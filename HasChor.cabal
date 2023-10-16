@@ -9,6 +9,7 @@ maintainer:         Gan Shen <gan_shen@icloud.com>
 copyright:          (c) Gan Shen 2022
 category:           Concurrency
 tested-with:
+    GHC == 9.6.3
     GHC == 9.4.7
     GHC == 9.2.8
 
