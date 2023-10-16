@@ -26,7 +26,7 @@ source-repository-package
     branch: main
 ```
 
-If you want to make changes to HasChor, you could clone the repository and list it as a local package in the `cabal.project` file:
+Alternatively, if you want to make changes to HasChor, you could clone the repository and list it as a local package in the `cabal.project` file:
 
 ``` cabal-config
 packages:
@@ -34,7 +34,7 @@ packages:
     ./HasChor -- path to HasChor repository
 ```
 
-Then you can list `HasChor` as a dependency in the `.cabal` file:
+Either way, you can then list `HasChor` as a dependency in your `.cabal` file:
 
 ``` cabal-config
 build-depends:
@@ -128,16 +128,16 @@ main = do
             ]
 ```
 
-First, we define a set of locations (`buyer`, `seller`, `deliverer`) we will use in the choreography.
-Locations are HasChor's abstraction for nodes in a distributed system --- they are just `String`s.
-Since HasChor also uses locations at the type level, we define them as `Proxy`s of `String`s.
+First, we define a set of locations we will use in the choreography.
+Locations are HasChor's abstraction for nodes in a distributed system — they are just `String`s.
+Since HasChor also uses locations at the type level, we turn on the `DataKinds` extension and define term-level `Proxy`s (`buyer`, `seller`, `deliverer`) for them.
 
 Next, we have some auxiliary definitions (`priceOf`, `deliveryDateOf`, `budget`) for use in the choreography.
 
-`bookshop` is the choreography:
+`bookshop` is a choreography that implements the bookshop protocol:
 
 - `Choreo m a` is a monad that represents a choreography that returns a value of type `a`.
-  The `m` represents the local computation that locations can perform.
+  The `m` parameter is another monad that represents the local computation that locations can perform.
 
 - `a @ l` is a located value that represents a value of type `a` at location `l`.
   It's kept opaque to the user to avoid misusing values at locations they're not at.
@@ -146,11 +146,11 @@ Next, we have some auxiliary definitions (`priceOf`, `deliveryDateOf`, `budget`)
   It takes a location `l`, a local computation `m a` with access to a unwrap function, and returns a value at `l`.
   The unwrap function is of type `Unwrap l = a @ l -> a`, which can only unwrap values at `l`.
 
-- `(~>) :: (Proxy l, a @ l) -> Proxy l' -> Choreo m (a @ l')` is the operator for communications between two locations.
-  It turns a value at `l` to the same value but at `l'`.
+- `(~>) :: (Proxy l, a @ l) -> Proxy l' -> Choreo m (a @ l')` is the operator for communication between two locations.
+  It turns a value at `l` to the same value at `l'`.
 
-- `cond :: (Proxy l, a @ l) -> (a -> Choreo m b) -> Choreo m b` is the operator for conditional executions.
-  It takes a condition `a` at `l`, a function `a -> Choreo m b` denoting the branches, and returns one of the branches.
+- `cond :: (Proxy l, a @ l) -> (a -> Choreo m b) -> Choreo m b` is the operator for conditional execution.
+  It takes a condition `a` at `l`, a function `a -> Choreo m b` denoting branches, and returns one of the branches.
 
 Finally, we use `runChoreography :: Backend cfg => cfg -> Choreo m a -> String -> m a` to project the choreography to a particular location and run the resulting program.
 `runChoregraphy` takes a *backend configuration* cfg which specifies the message transport backend that acutally handles sending and receives messages.
@@ -158,6 +158,11 @@ Finally, we use `runChoreography :: Backend cfg => cfg -> Choreo m a -> String -
 ## More Examples
 
 HasChor comes with a set of illustrative examples in the [examples](examples) directory.
+They are built as executables alongside the HasChor library and can be run with:
+
+``` bash
+cabal run executable-name location
+```
 
 ## Further Readings
 
