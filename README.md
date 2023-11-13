@@ -13,8 +13,13 @@ You can find the API specification [here](https://gshen42.github.io/HasChor/).
 
 ## Usage
 
-HasChor is not yet on Hackage.
-Right now, the easiest way to use HasChor is to create a `cabal.project` file and list HasChor's repository as an external source:
+### From Hackage
+
+Simply list `HaChor` in your cabal `build-depends` field, and you're ready to go!
+
+### From the Source Repository
+
+Create a `cabal.project` file and list HasChor's repository as an external source:
 
 ``` cabal-config
 packages:
