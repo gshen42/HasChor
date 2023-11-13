@@ -6,7 +6,7 @@ In this way, the generated programs are guaranteed to be *deadlock-free*.
 
 HasChor has the following features:
 - HasChor provides a *monadic* interface for choreographic programming where choreographies are expressed as computations in a monad.
-- HasChor is implemented as an *embedded* domain-specific language, enabling it to inherent features and libraries from Haskell for free.
+- HasChor is implemented as an *embedded* domain-specific language, enabling it to inherit features and libraries from Haskell for free.
 - HasChor is built on top of *freer monads*, leading to a flexible, extensible, and concise implementation.
 
 You can find the API specification [here](https://gshen42.github.io/HasChor/).
