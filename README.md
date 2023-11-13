@@ -158,7 +158,7 @@ Next, we have some auxiliary definitions (`priceOf`, `deliveryDateOf`, `budget`)
   It takes a condition `a` at `l`, a function `a -> Choreo m b` denoting branches, and returns one of the branches.
 
 Finally, we use `runChoreography :: Backend cfg => cfg -> Choreo m a -> String -> m a` to project the choreography to a particular location and run the resulting program.
-`runChoregraphy` takes a *backend configuration* cfg which specifies the message transport backend that acutally handles sending and receives messages.
+`runChoreography` takes a *backend configuration* `cfg` which specifies the message transport backend that acutally handles sending and receiving messages. This example uses HasChor's HTTP backend, which implements the `Backend` typeclass. Alternate implementations of `Backend` could use different message transport mechanisms.
 
 ## More Examples
 
