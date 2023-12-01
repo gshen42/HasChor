@@ -6,6 +6,7 @@ module Choreography.Choreo where
 
 import Choreography.Location
 import Choreography.Network
+import Control.Monad (when)
 import Control.Monad.Freer
 import Data.List
 import Data.Proxy
@@ -58,9 +59,10 @@ epp c l' = interpFreer handler c
       | toLocTm l == l' = wrap <$> run (m unwrap)
       | otherwise       = return Empty
     handler (Comm s a r)
-      | toLocTm s == l' = send (unwrap a) (toLocTm r) >> return Empty
-      | toLocTm r == l' = wrap <$> recv (toLocTm s)
-      | otherwise       = return Empty
+      = do when (toLocTm s == l') $ send (unwrap a) (toLocTm r)
+           if toLocTm r == l' 
+             then wrap <$> recv (toLocTm s)
+             else return Empty
     handler (Cond l a c)
       | toLocTm l == l' = broadcast (unwrap a) >> epp (c (unwrap a)) l'
       | otherwise       = recv (toLocTm l) >>= \x -> epp (c x) l'
