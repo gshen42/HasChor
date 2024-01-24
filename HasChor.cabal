@@ -39,8 +39,11 @@ library
         Choreography.Network
         Choreography.Network.Http
         Choreography.Network.Local
+        Choreography.NetworkAsync
+        Choreography.NetworkAsync.Http
         Control.Monad.Freer
     build-depends:
+        , async                >= 2.2  && < 2.3
         , base                 >= 4.16 && < 4.20
         , bytestring           >= 0.11 && < 0.13
         , http-client          >= 0.7  && < 0.8
@@ -50,6 +53,15 @@ library
         , template-haskell     >= 2.18 && < 2.22
         , unordered-containers >= 0.2  && < 0.3
         , warp                 >= 3.3  && < 3.4
+
+executable async
+    hs-source-dirs:   examples/async
+    main-is:          Main.hs
+    default-language: GHC2021
+    build-depends:
+        , HasChor
+        , async                >= 2.2  && < 2.3
+        , base >= 4.16 && < 4.20
 
 executable bank-2pc
     hs-source-dirs:   examples/bank-2pc
