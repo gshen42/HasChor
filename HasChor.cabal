@@ -1,4 +1,4 @@
-cabal-version:      2.4
+ocabal-version:      2.4
 name:               HasChor
 version:            0.1.0.1
 synopsis:           Functional choreographic programming in Haskell
@@ -35,6 +35,7 @@ library
     exposed-modules:
         Choreography
         Choreography.Choreo
+        Choreography.ChoreoAsync
         Choreography.Location
         Choreography.Network
         Choreography.Network.Http
@@ -47,6 +48,7 @@ library
         , base                 >= 4.16 && < 4.20
         , bytestring           >= 0.11 && < 0.13
         , http-client          >= 0.7  && < 0.8
+        , mtl                  >= 2.2  && < 2.4
         , servant              >= 0.19 && < 0.21
         , servant-client       >= 0.19 && < 0.21
         , servant-server       >= 0.19 && < 0.21
