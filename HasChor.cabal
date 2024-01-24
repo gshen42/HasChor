@@ -1,4 +1,4 @@
-ocabal-version:      2.4
+cabal-version:      2.4
 name:               HasChor
 version:            0.1.0.1
 synopsis:           Functional choreographic programming in Haskell
