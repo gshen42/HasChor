@@ -80,6 +80,24 @@ locally l m = toFreer (Local l m)
      -> Choreo m (Async a @ l')
 (~>) (l, a) l' = toFreer (Comm l a l')
 
+class HasFail a where
+  failVal :: a
+
+instance HasFail Int where
+  failVal = -1
+
+select :: (KnownSymbol l, Eq a, HasFail a) => Proxy l -> (Async a @ l) -> (Async a @ l) -> Choreo IO (Async a @ l)
+select l x y = do
+  l `locally` \un -> do
+    x' <- poll (un x)
+    case x' of
+      (Just (Right a)) | a /= failVal -> return $ un x
+      _ -> do
+        y' <- poll (un y)
+        case y' of
+          (Just (Right _)) -> return $ un y
+          _ -> async (return failVal)
+
 -- | Run a choreography with a message transport backend.
 runChoreography :: (Backend config, MonadIO m) => config -> Choreo m a -> LocTm -> m a
 runChoreography cfg choreo l = runNetwork cfg l (epp choreo l)
