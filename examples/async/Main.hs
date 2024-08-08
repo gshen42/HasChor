@@ -1,16 +1,17 @@
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DataKinds #-}
 
 module Main where
 
-import Control.Concurrent.Async
+import Choreography.ChoreoAsync
 import Choreography.Location
 import Choreography.NetworkAsync
 import Choreography.NetworkAsync.Http
-import Choreography.ChoreoAsync
-import System.Environment
-import Data.Proxy
+import ChoreographyAsync
+import Control.Concurrent.Async
 import Control.Monad
+import Data.Proxy
+import System.Environment
 
 -- 1. `Async a` denotes a asynchornous computation that returns a
 -- value of type `a`. There's a set of functions to work with `Async`,
@@ -52,34 +53,40 @@ import Control.Monad
 
 progA :: Network IO ()
 progA = do
-  lift $ getLine
+  (_ :: Async ()) <- recv "D" 1000
+  run $ getLine
   send () "D" 1000
   return ()
 
 progB :: Network IO ()
 progB = do
-    lift $ getLine
-    send () "D" 1000
-    return ()
+  (_ :: Async ()) <- recv "D" 1000
+  run $ getLine
+  send () "D" 1000
+  return ()
 
 progC :: Network IO ()
 progC = do
-    lift $ getLine
-    send () "D" 1000
-    return ()
+  (_ :: Async ()) <- recv "D" 1000
+  run $ getLine
+  send () "D" 1000
+  return ()
 
 progD :: Network IO ()
 progD = do
+  broadcast () 1000
   (a :: Async ()) <- recv "A" 1000
   (b :: Async ()) <- recv "B" 1000
   (c :: Async ()) <- recv "C" 1000
-  lift $ putStrLn "I can do something else while waiting!"
-  (x, _) <- lift $ waitAny [a, b, c]
+  run $ putStrLn "I can do something else while waiting!"
+  (x, _) <- run $ waitAny [a, b, c]
   if x == a
-    then lift $ putStrLn "A comes first"
-    else if x == b
-         then lift $ putStrLn "B comes first"
-         else lift $ putStrLn "C comes first"
+    then run do
+      putStrLn "A comes first"
+    else
+      if x == b
+        then run $ putStrLn "B comes first"
+        else run $ putStrLn "C comes first"
 
 test1 :: IO ()
 test1 = do
@@ -91,11 +98,13 @@ test1 = do
     "D" -> runNetwork cfg "D" progD
   return ()
   where
-    cfg = mkHttpConfig [ ("A", ("localhost", 4242))
-                       , ("B", ("localhost", 4343))
-                       , ("C", ("localhost", 4444))
-                       , ("D", ("localhost", 4545))
-                       ]
+    cfg =
+      mkHttpConfig
+        [ ("A", ("localhost", 4242)),
+          ("B", ("localhost", 4343)),
+          ("C", ("localhost", 4444)),
+          ("D", ("localhost", 4545))
+        ]
 
 ----------------------------------------------------------------------
 -- Test asynchronous choreographies
@@ -115,34 +124,37 @@ locD = Proxy
 choreo :: Choreo IO (() @ "D")
 choreo = do
   locA `locally` \_ -> getLine
-  a  <- (locA, wrap ()) ~> locD
+  a <- (locA, wrap ()) ~> locD
 
   locB `locally` \_ -> getLine
-  b  <- (locB, wrap ()) ~> locD
+  b <- (locB, wrap ()) ~> locD
 
   locC `locally` \_ -> getLine
-  c  <- (locC, wrap ()) ~> locD
+  c <- (locC, wrap ()) ~> locD
 
   locD `locally` \un -> putStrLn "I can do something else while waiting!"
 
   locD `locally` \un -> do
     (x, _) <- waitAny [un a, un b, un c]
     if x == un a
-    then putStrLn "A comes first"
-    else if x == un b
-         then putStrLn "B comes first"
-         else putStrLn "C comes first"
+      then putStrLn "A comes first"
+      else
+        if x == un b
+          then putStrLn "B comes first"
+          else putStrLn "C comes first"
 
 test2 :: IO ()
 test2 = do
   [loc] <- getArgs
   void $ runChoreography cfg choreo loc
   where
-    cfg = mkHttpConfig [ ("A", ("localhost", 4242))
-                       , ("B", ("localhost", 4343))
-                       , ("C", ("localhost", 4444))
-                       , ("D", ("localhost", 4545))
-                       ]
+    cfg =
+      mkHttpConfig
+        [ ("A", ("localhost", 4242)),
+          ("B", ("localhost", 4343)),
+          ("C", ("localhost", 4444)),
+          ("D", ("localhost", 4545))
+        ]
 
 ----------------------------------------------------------------------
 -- Test sequence ids
@@ -151,10 +163,10 @@ choreo2 :: Choreo IO (() @ "D")
 choreo2 = do
   locA `locally` \_ -> getLine
 
-  a1  <- (locA, wrap "Hello, ") ~> locD
-  a2  <- (locA, wrap "world. ") ~> locD
-  a3  <- (locA, wrap "I like ") ~> locD
-  a4  <- (locA, wrap "choreographic programming.") ~> locD
+  a1 <- (locA, wrap "Hello, ") ~> locD
+  a2 <- (locA, wrap "world. ") ~> locD
+  a3 <- (locA, wrap "I like ") ~> locD
+  a4 <- (locA, wrap "choreographic programming.") ~> locD
 
   locD `locally` \un -> do
     as <- mapM (wait . un) [a1, a2, a3, a4]
@@ -165,11 +177,13 @@ test3 = do
   [loc] <- getArgs
   void $ runChoreography cfg choreo2 loc
   where
-    cfg = mkHttpConfig [ ("A", ("localhost", 4242))
-                       , ("B", ("localhost", 4343))
-                       , ("C", ("localhost", 4444))
-                       , ("D", ("localhost", 4545))
-                       ]
+    cfg =
+      mkHttpConfig
+        [ ("A", ("localhost", 4242)),
+          ("B", ("localhost", 4343)),
+          ("C", ("localhost", 4444)),
+          ("D", ("localhost", 4545))
+        ]
 
 client :: Proxy "client"
 client = Proxy
@@ -190,12 +204,13 @@ choreo4 = do
 
   client `locally` \_ -> getLine
 
-  largeAv <- client `locally` \un -> do
-    bal1'' <- poll (un bal1')
-    bal2'' <- poll (un bal2')
-    case (bal1'', bal2'') of
-      (Just (Right x), Just (Right y)) -> async (return $ max x y)
-      _ -> async (return (-1))
+  largeAv <-
+    client `locally` \un -> do
+      bal1'' <- poll (un bal1')
+      bal2'' <- poll (un bal2')
+      case (bal1'', bal2'') of
+        (Just (Right x), Just (Right y)) -> async (return $ max x y)
+        _ -> async (return (-1))
   availBal <- select client bal1' bal2'
   largestBal <- select client largeAv availBal
   client `locally` \un -> do
@@ -208,15 +223,18 @@ test4 = do
   [loc] <- getArgs
   void $ runChoreography cfg choreo4 loc
   where
-    cfg = mkHttpConfig [ ("client", ("localhost", 4242))
-                       , ("bank1", ("localhost", 4343))
-                       , ("bank2", ("localhost", 4444))
-                       ]
+    cfg =
+      mkHttpConfig
+        [ ("client", ("localhost", 4242)),
+          ("bank1", ("localhost", 4343)),
+          ("bank2", ("localhost", 4444))
+        ]
 
 ----------------------------------------------------------------------
 -- Entry point
 
--- main = test1
+main = test1
+
 -- main = test2
 -- main = test4
-main = test4
+-- main = test4
