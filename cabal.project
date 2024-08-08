@@ -1,0 +1,3 @@
+packages:
+    ./HasChor.cabal
+    ./examples/HasChor-examples.cabal
