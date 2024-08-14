@@ -1,40 +1,36 @@
 {-# LANGUAGE ExplicitNamespaces #-}
 
 -- | This module defines the interface to HasChor. The client of the library is
--- highly recommended to only use constructs exported by this module.
-module Choreography (
-  -- * Locations and Located Values
-  LocTm,
-  LocTy,
-  type (@),
-  mkLoc,
+-- recommended to only use constructs exported by this module.
+module Choreography
+  ( -- * Locations and Located Values
+    LocTm,
+    LocTy,
+    type (@),
+    mkLoc,
 
-  -- * The Choreo monad
-  Choreo,
-  -- ** Choreo operations
-  locally,
-  (~>),
-  (~~>),
-  cond,
-  cond',
+    -- * The Choreo monad
+    Choreo,
+    locally,
+    (~>),
 
-  -- * Message transport backends
-  -- ** The HTTP backend
-  Host,
-  Port,
-  HttpConfig,
-   mkHttpConfig,
+    -- * Message transport backends
 
-  -- * Running choreographies
-  runChoreo,
-  runChoreography
-  ) where
+    -- ** The HTTP backend
+    Host,
+    Port,
+    HttpConfig,
+    mkHttpConfig,
 
-import Choreography.Location
+    -- * Running choreographies
+    runChoreography,
+  )
+where
+
 import Choreography.Choreo
+import Choreography.Location
 import Choreography.Network
 import Choreography.Network.Http
-import Choreography.Network.Local
 import Control.Monad.IO.Class
 import Data.Proxy
 

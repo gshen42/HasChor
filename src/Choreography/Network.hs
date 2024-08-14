@@ -4,51 +4,41 @@
 -- multiple message transport backends.
 module Choreography.Network where
 
-import Choreography.Location
-import Control.Monad.Freer
-import Control.Monad.IO.Class
+import Choreography.Location (LocTm)
+import Control.Concurrent.Async (Async)
+import Control.Monad.Freer (Freer, toFreer)
+import Control.Monad.IO.Class (MonadIO)
 
 -- * The Network monad
 
+-- | An id that uniquely identifies messages from the same sender.
+type SeqId = Int
+
 -- | Effect signature for the `Network` monad.
 data NetworkSig m a where
-  -- | Local computation.
-  Run :: m a
-      -> NetworkSig m a
-  -- | Sending.
-  Send :: Show a
-       => a
-       -> LocTm
-       -> NetworkSig m ()
-  -- | Receiving.
-  Recv :: Read a
-       => LocTm
-       -> NetworkSig m a
-  -- | Broadcasting.
-  BCast :: Show a
-        => a
-        -> NetworkSig m ()
+  Run :: m a -> NetworkSig m a
+  Send :: (Show a) => a -> LocTm -> SeqId -> NetworkSig m (Async ())
+  Recv :: (Read a) => LocTm -> SeqId -> NetworkSig m (Async a)
+  BCast :: (Show a) => a -> SeqId -> NetworkSig m [Async ()]
 
--- | Monad that represents network programs.
+-- | Monad that represents network programs
 type Network m = Freer (NetworkSig m)
 
--- * Network operations
-
--- | Perform a local computation.
+-- | Perform a local compuation.
 run :: m a -> Network m a
 run m = toFreer $ Run m
 
 -- | Send a message to a receiver.
-send :: Show a => a -> LocTm -> Network m ()
-send a l = toFreer $ Send a l
+send :: (Show a) => a -> LocTm -> SeqId -> Network m (Async ())
+send a l id = toFreer $ Send a l id
 
 -- | Receive a message from a sender.
-recv :: Read a => LocTm -> Network m a
-recv l = toFreer $ Recv l
+recv :: (Read a) => LocTm -> SeqId -> Network m (Async a)
+recv l id = toFreer $ Recv l id
 
 -- | Broadcast a message to all participants.
-broadcast :: Show a => a -> Network m ()
-broadcast a = toFreer $ BCast a
+broadcast :: (Show a) => a -> SeqId -> Network m [Async ()]
+broadcast a id = toFreer $ BCast a id
 
 -- * Message transport backends
 
@@ -56,4 +46,4 @@ broadcast a = toFreer $ BCast a
 -- carries necessary bookkeeping information, then defines @c@ as an instance
 -- of `Backend` and provides a `runNetwork` function.
 class Backend c where
-  runNetwork :: MonadIO m => c -> LocTm -> Network m a -> m a
+  runNetwork :: (MonadIO m) => c -> LocTm -> Network m a -> m a
