@@ -1,21 +1,19 @@
-cabal-version:      2.4
+cabal-version:      3.0
 name:               HasChor
-version:            0.1.0.1
+version:            0.2.0.0
 synopsis:           Functional choreographic programming in Haskell
 license:            BSD-3-Clause
 license-file:       LICENSE
 author:             Gan Shen
 maintainer:         Gan Shen <gan_shen@icloud.com>
-copyright:          (c) Gan Shen 2022
+copyright:          (c) Gan Shen 2024
 category:           Concurrency
 description:
     HasChor is a library for functional choreographic programming in Haskell.
     See the README.md for more information.
 
 tested-with:
-    GHC == 9.6.3
-    GHC == 9.4.7
-    GHC == 9.2.8
+    GHC == 9.4.8
 
 extra-doc-files:
     README.md
@@ -27,7 +25,7 @@ source-repository head
 source-repository this
     type:     git
     location: https://github.com/gshen42/HasChor
-    tag:      v0.1.0.1
+    tag:      v0.2.0.0
 
 library
     hs-source-dirs:   src
@@ -41,14 +39,15 @@ library
 --        Choreography.Network.Local
         Control.Monad.Freer
     build-depends:
-        , async                >= 2.2  && < 2.3
-        , base                 >= 4.16 && < 4.20
-        , bytestring           >= 0.11 && < 0.13
-        , http-client          >= 0.7  && < 0.8
-        , mtl                  >= 2.2  && < 2.4
-        , servant              >= 0.19 && < 0.21
-        , servant-client       >= 0.19 && < 0.21
-        , servant-server       >= 0.19 && < 0.21
-        , template-haskell     >= 2.18 && < 2.22
-        , unordered-containers >= 0.2  && < 0.3
-        , warp                 >= 3.3  && < 3.4
+        , async
+        , base
+        , bytestring
+        , http-client
+        , mtl
+        , servant
+        , servant-client
+        , servant-server
+        , template-haskell
+        , transformers
+        , unordered-containers
+        , warp
