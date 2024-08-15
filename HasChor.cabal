@@ -31,11 +31,11 @@ library
     hs-source-dirs:   src
     default-language: GHC2021
     exposed-modules:
-        Choreography
+--        Choreography
         Choreography.Choreo
         Choreography.Location
         Choreography.Network
-        Choreography.Network.Http
+--        Choreography.Network.Http
 --        Choreography.Network.Local
         Control.Monad.Freer
     build-depends:

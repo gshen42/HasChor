@@ -9,153 +9,136 @@ import Choreography.Network
 import Control.Concurrent.Async
 import Control.Monad.Freer
 import Control.Monad.IO.Class
-import Control.Monad.State hiding (lift)
-import Control.Monad.State qualified as S
-import Data.Proxy
-import GHC.TypeLits
+import Control.Monad.State.Strict
+import Control.Monad.Trans.Maybe
+import Data.HashMap.Strict as HM
+import Data.Maybe
+
+-- * Located computation
+
+-- | A located computation. @At l m a@ denotes a computation lcoated at @l@
+-- within the monad @m@ and returns a value of type @a@. It is semantically
+-- equivalent to @m (Maybe a)@.
+newtype At l m a = At {unAt :: MaybeT m a}
+  deriving (Functor, Applicative, Monad, MonadTrans)
+
+-- | Unwrap a located value.
+--
+-- /Note:/ Unwrapping a empty located value will throw an exception.
+unwrap :: (Monad m) => At l m a -> m a
+unwrap = fmap (fromMaybe $ error "internal error") . runMaybeT . unAt
+
+absent :: (Monad m) => At l m a
+absent = At $ MaybeT $ return Nothing
+
+present :: (Monad m) => a -> At l m a
+present = At . MaybeT . return . Just
 
 -- * The Choreo monad
-
--- | A constrained version of `unwrap` that only unwraps values located at a
--- specific location.
-type Unwrap l = forall a. a @ l -> a
 
 -- | Effect signature for the `Choreo` monad. @m@ is a monad that represents
 -- local computations.
 data ChoreoSig m a where
-  Local ::
-    (KnownSymbol l) =>
-    Proxy l ->
-    (Unwrap l -> m a) ->
-    ChoreoSig m (a @ l)
   Comm ::
-    (KnownSymbol l, KnownSymbol l', Show a, Read a) =>
-    Proxy l ->
-    a @ l ->
-    Proxy l' ->
-    ChoreoSig m (Async a @ l')
+    (Show a, Read a) =>
+    Loc s ->
+    Loc r ->
+    At s m a ->
+    ChoreoSig m (At r m (Async a))
   Cond ::
-    (KnownSymbol l, Show a, Read a) =>
-    Proxy l ->
-    a @ l ->
+    (Show a, Read a) =>
+    Loc s ->
+    At s m a ->
     (a -> Choreo m b) ->
     ChoreoSig m b
+  Local ::
+    Loc l ->
+    At l m a ->
+    ChoreoSig m (At l m a)
 
 -- | Monad for writing choreographies.
-type Choreo m = Freer (ChoreoSig m)
+newtype Choreo m a = Choreo {unChoreo :: Freer (ChoreoSig m) a}
+  deriving (Functor, Applicative, Monad)
 
--- | Run a `Choreo` monad directly.
--- runChoreo :: (Monad m) => Choreo m a -> m a
--- runChoreo = interpFreer handler
---   where
---     handler :: (Monad m) => ChoreoSig m a -> m a
---     handler (Local _ m) = wrap <$> m unwrap
---     handler (Comm _ a _) = return $ (wrap . unwrap) a
---     handler (Cond _ a c) = runChoreo $ c (unwrap a)
+-- | Communication between a sender and a receiver.
+comm ::
+  (Show a, Read a) =>
+  -- | A pair of sender and receiver
+  (Loc s, Loc r) ->
+  -- | A located computation at sender
+  At s m a ->
+  Choreo m (At r m (Async a))
+comm (s, r) a = Choreo $ toFreer (Comm s r a)
+
+-- | Branch on the result of a located computation.
+cond ::
+  (Show a, Read a) =>
+  -- | A pair of a location and a scrutinee located on it.
+  (Loc s, At s m a) ->
+  -- | A function that describes the follow-up choreographies based on the
+  -- value of scrutinee.
+  (a -> Choreo m b) ->
+  Choreo m b
+cond (s, a) f = Choreo $ toFreer (Cond s a f)
 
 -- | Perform a local computation at a given location.
 locally ::
-  (KnownSymbol l) =>
   -- | Location performing the local computation.
-  Proxy l ->
+  Loc l ->
   -- | The local computation given a constrained unwrap funciton.
-  (Unwrap l -> m a) ->
-  Choreo m (a @ l)
-locally l m = toFreer (Local l m)
-
--- | Communication between a sender and a receiver.
-(~>) ::
-  (Show a, Read a, KnownSymbol l, KnownSymbol l') =>
-  -- | A pair of a sender's location and a value located at the sender
-  (Proxy l, a @ l) ->
-  -- | A receiver's location.
-  Proxy l' ->
-  Choreo m (Async a @ l')
-(~>) (l, a) l' = toFreer (Comm l a l')
-
--- | Conditionally execute choreographies based on a located value.
-cond ::
-  (Show a, Read a, KnownSymbol l) =>
-  -- | A pair of a location and a scrutinee located on
-  -- it.
-  (Proxy l, a @ l) ->
-  -- | A function that describes the follow-up
-  -- choreographies based on the value of scrutinee.
-  (a -> Choreo m b) ->
-  Choreo m b
-cond (l, a) c = toFreer (Cond l a c)
-
--- | A variant of `~>` that sends the result of a local computation.
-(~~>) ::
-  (KnownSymbol l, KnownSymbol l', Show a, Read a) =>
-  -- | A pair of a sender's location and a local computation.
-  (Proxy l, Unwrap l -> m a) ->
-  -- | A receiver's location.
-  Proxy l' ->
-  Choreo m (Async a @ l')
-(~~>) (l, m) l' = do
-  x <- l `locally` m
-  (l, x) ~> l'
-
--- | A variant of `cond` that conditonally executes choregraphies based on the
--- result of a local computation.
-cond' ::
-  (Show a, Read a, KnownSymbol l) =>
-  -- | A pair of a location and a local computation.
-  (Proxy l, Unwrap l -> m a) ->
-  -- | A function that describes the follow-up choreographies based on the
-  -- result of the local computation.
-  (a -> Choreo m b) ->
-  Choreo m b
-cond' (l, m) c = do
-  x <- l `locally` m
-  cond (l, x) c
-
-class HasFail a where
-  failVal :: a
-
-instance HasFail Int where
-  failVal = -1
-
-select :: (KnownSymbol l, Eq a, HasFail a) => Proxy l -> (Async a @ l) -> (Async a @ l) -> Choreo IO (Async a @ l)
-select l x y = do
-  l `locally` \un -> do
-    x' <- poll (un x)
-    case x' of
-      (Just (Right a)) | a /= failVal -> return $ un x
-      _ -> do
-        y' <- poll (un y)
-        case y' of
-          (Just (Right _)) -> return $ un y
-          _ -> async (return failVal)
+  At l m a ->
+  Choreo m (At l m a)
+locally l a = Choreo $ toFreer (Local l a)
 
 -- * Endpoint projection
 
-epp :: (MonadIO m) => Choreo m a -> LocTm -> Network m a
-epp c l' = evalStateT (interpFreer handler c) 0
-  where
-    handler :: (MonadIO m) => ChoreoSig m a -> StateT Int (Network m) a
-    handler (Local l m)
-      | toLocTm l == l' = S.lift (wrap <$> run (m unwrap))
-      | otherwise = S.lift (return Empty)
-    handler (Comm s a r)
-      | toLocTm s == toLocTm r = inc >> S.lift (run $ liftIO $ wrap <$> async (return (unwrap a)))
-      | toLocTm s == l' = inc >>= \n -> S.lift (send (unwrap a) (toLocTm r) n >> return Empty)
-      | toLocTm r == l' = inc >>= \n -> S.lift (wrap <$> recv (toLocTm s) n)
-      | otherwise = inc >> S.lift (return Empty)
-    handler (Cond l a c)
-      | toLocTm l == l' = do
-          n <- inc
-          S.lift $ broadcast (unwrap a) n
-          S.lift $ epp (c (unwrap a)) l'
-      | otherwise = do
-          n <- inc
-          m <- S.lift $ recv (toLocTm l) n
-          x <- S.lift $ run $ liftIO $ wait m
-          S.lift $ epp (c x) l'
+type SeqIdMap = HashMap LocTm SeqId
 
-    inc :: (Monad m) => StateT Int m Int
-    inc = do
-      n <- get
-      put (n + 1)
-      return n
+epp :: (MonadIO m) => Choreo m a -> Loc l -> Network m a
+epp c t = evalStateT (interpFreer handler (unChoreo c)) HM.empty
+  where
+    handler :: (MonadIO m) => ChoreoSig m a -> StateT SeqIdMap (Network m) a
+    handler (Comm s r a)
+      -- sender and receiver are the same
+      | eqLoc s r = undefined
+      -- target is the sender
+      | eqLoc t s = do
+          i <- newSeqId s
+          -- TODO: why the double lifts?
+          v <- lift $ lift $ unwrap a
+          lift $ send (v, s, i) r
+          return absent
+      -- target is the receiver
+      | eqLoc t r = do
+          i <- newSeqId s
+          v <- lift $ recv (s, i)
+          return (present v)
+      -- target is neither the sender nor the receiver
+      | otherwise = return absent
+    handler (Cond s a f)
+      -- target is the sender
+      | eqLoc t s = do
+          i <- newSeqId s
+          v <- lift $ lift $ unwrap a
+          lift $ broadcast (v, s, i)
+          lift $ epp (f v) t
+      -- target is the receiver
+      | otherwise = do
+          i <- newSeqId s
+          v <- lift $ recv (s, i)
+          -- select messages are synchronous
+          v' <- liftIO $ wait v
+          lift $ epp (f v') t
+    handler (Local l a)
+      | eqLoc t l = do
+          v <- lift $ lift $ unwrap a
+          return (present v)
+      | otherwise = return absent
+
+    newSeqId :: (Monad m) => Loc l -> StateT SeqIdMap m SeqId
+    newSeqId l = do
+      m <- get
+      let l' = toLocTm l
+      let v = HM.findWithDefault 0 l' m
+      modify (insert l' (v + 1))
+      return v
