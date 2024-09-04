@@ -35,7 +35,7 @@ library
 --        Choreography.Choreo
         Choreography.Located
         Choreography.Location
---        Choreography.Network
+        Choreography.Network
 --        Choreography.Network.Http
 --        Choreography.Network.Local
         Control.Monad.Async

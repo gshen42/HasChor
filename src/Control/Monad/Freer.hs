@@ -1,15 +1,15 @@
--- | This module defines the freer monad `Freer`, which allows manipulating
--- effectful computations algebraically.
+-- | This module defines the freer monad `Freer`, which allows defining
+-- computations with interpretable effects.
 module Control.Monad.Freer where
 
 import Control.Monad ((>=>))
 
--- | Freer monads.
+-- | The freer monad.
 --
 -- A freer monad @Freer f a@ represents an effectful computation that returns a
 -- value of type @a@. The parameter @f :: * -> *@ is a effect signature that
 -- defines the effectful operations allowed in the computation. @Freer f a@ is
--- called a freer monad in that it's a `Monad` given any @f@.
+-- called a freer monad because it's a `Monad` for any given @f@.
 data Freer f a where
   -- | A pure computation.
   Return :: a -> Freer f a
@@ -17,27 +17,27 @@ data Freer f a where
   -- to perform and returns a result of type @b@; the second argument
   -- @b -> Freer f a@ is a continuation that specifies the rest of the
   -- computation given the result of the performed effect.
-  Do :: f b -> (b -> Freer f a) -> Freer f a
+  Bind :: f b -> (b -> Freer f a) -> Freer f a
 
 instance Functor (Freer f) where
   fmap f (Return a) = Return (f a)
-  fmap f (Do eff k) = Do eff (fmap f . k)
+  fmap f (Bind e k) = Bind e (fmap f . k)
 
 instance Applicative (Freer f) where
   pure = Return
 
   (Return f) <*> a = fmap f a
-  (Do eff k) <*> a = Do eff $ (<*> a) . k
+  (Bind e k) <*> a = Bind e $ (<*> a) . k
 
 instance Monad (Freer f) where
   (Return a) >>= f = f a
-  (Do eff k) >>= f = Do eff (k >=> f)
+  (Bind e k) >>= f = Bind e (k >=> f)
 
--- | Lift an effect into the freer monad.
-toFreer :: f a -> Freer f a
-toFreer eff = Do eff Return
+-- | Perform an effect in the freer monad.
+perform :: f a -> Freer f a
+perform e = Bind e Return
 
 -- | Interpret the effects in a freer monad in terms of another monad.
-interpFreer :: Monad m => (forall a. f a -> m a) -> Freer f a -> m a
-interpFreer handler (Return a) = return a
-interpFreer handler (Do eff k) = handler eff >>= interpFreer handler . k
+interp :: (Monad m) => (forall a. f a -> m a) -> Freer f a -> m a
+interp handler (Return a) = return a
+interp handler (Bind e k) = handler e >>= interp handler . k

@@ -5,49 +5,44 @@
 module Choreography.Network where
 
 import Choreography.Location
-import Control.Concurrent.Async
+import Control.Monad.Async
 import Control.Monad.Freer
 import Control.Monad.IO.Class
-import Control.Monad.Trans.Class
 
 -- * The Network monad
 
 -- | An id that uniquely identifies messages from the same sender.
 type SeqId = Int
 
--- | An id that uniquely identifies messages across different senders.
-type MsgId = (LocTm, SeqId)
+-- | Effect NetworkSigature for the `Network` monad.
+data Sig a where
+  -- Local computation
+  LiftIO :: IO a -> Sig a
+  -- Communication
+  Send :: (Show a) => a -> LocTm -> SeqId -> Sig (Async ())
+  Recv :: (Read a) => LocTm -> SeqId -> Sig (Async a)
+  -- Knowledge of choice
+  BCast :: (Show a) => a -> SeqId -> Sig (Async [()])
 
--- | Effect signature for the `Network` monad.
-data NetworkSig m a where
-  Run :: m a -> NetworkSig m a
-  Send :: (Show a) => a -> MsgId -> LocTm -> NetworkSig m (Async ())
-  Recv :: (Read a) => MsgId -> NetworkSig m (Async a)
-  BCast :: (Show a) => a -> MsgId -> NetworkSig m [Async ()]
-
--- | Monad that represents network programs
-newtype Network m a = Network {unNetwork :: Freer (NetworkSig m) a}
+-- | Network programs.
+newtype Network a = Network {unNetwork :: Freer Sig a}
   deriving (Functor, Applicative, Monad)
 
--- | Perform a local computation.
-instance MonadTrans Network where
-  lift = Network . toFreer . Run
+-- | Perform a IO operation if the local monad subsumes IO.
+instance MonadIO Network where
+  liftIO = Network . perform . LiftIO
 
 -- | Send a message to a receiver.
-send :: (Show a) => (a, Loc s, SeqId) -> Loc r -> Network m (Async ())
-send (a, s, i) r = Network $ toFreer $ Send a (toLocTm s, i) (toLocTm r)
+send :: (Show a) => a -> Loc r -> SeqId -> Network (Async ())
+send a r i = Network $ perform $ Send a (toLocTm r) i
 
 -- | Receive a message from a sender.
-recv :: (Read a) => (Loc s, SeqId) -> Network m (Async a)
-recv (s, i) = Network $ toFreer $ Recv (toLocTm s, i)
+recv :: (Read a) => Loc s -> SeqId -> Network (Async a)
+recv s i = Network $ perform $ Recv (toLocTm s) i
 
 -- | Broadcast a message to all participants.
-broadcast :: (Show a) => (a, Loc s, SeqId) -> Network m [Async ()]
-broadcast (a, s, i) = Network $ toFreer $ BCast a (toLocTm s, i)
-
--- | Perform a IO operation if the local monad subsumes IO.
-instance (MonadIO m) => MonadIO (Network m) where
-  liftIO = Network . toFreer . Run . liftIO
+broadcast :: (Show a) => a -> SeqId -> Network (Async [()])
+broadcast a i = Network $ perform $ BCast a i
 
 -- * Message transport backends
 
@@ -55,4 +50,4 @@ instance (MonadIO m) => MonadIO (Network m) where
 -- carries necessary bookkeeping information, then defines @c@ as an instance
 -- of `Backend` and provides a `runNetwork` function.
 class Backend c where
-  runNetwork :: (MonadIO m) => c -> LocTm -> Network m a -> m a
+  runNetwork :: c -> LocTm -> Network a -> IO a
