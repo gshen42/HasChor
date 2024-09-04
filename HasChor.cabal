@@ -33,8 +33,8 @@ library
     exposed-modules:
 --        Choreography
 --        Choreography.Choreo
---        Choreography.Located
---        Choreography.Location
+        Choreography.Located
+        Choreography.Location
 --        Choreography.Network
 --        Choreography.Network.Http
 --        Choreography.Network.Local
