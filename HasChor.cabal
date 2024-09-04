@@ -32,11 +32,13 @@ library
     default-language: GHC2021
     exposed-modules:
 --        Choreography
-        Choreography.Choreo
-        Choreography.Location
-        Choreography.Network
+--        Choreography.Choreo
+--        Choreography.Located
+--        Choreography.Location
+--        Choreography.Network
 --        Choreography.Network.Http
 --        Choreography.Network.Local
+        Control.Monad.Async
         Control.Monad.Freer
     build-depends:
         , async
@@ -51,3 +53,13 @@ library
         , transformers
         , unordered-containers
         , warp
+
+executable tests
+    hs-source-dirs:   tests
+    main-is:          Main.hs
+    default-language: GHC2021
+    build-depends:
+        , HasChor
+        , base
+        , bytestring
+        , network-simple
