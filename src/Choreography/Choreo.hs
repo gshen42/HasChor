@@ -1,144 +1,135 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE ImpredicativeTypes #-}
 
--- | This module defines `Choreo`, the monad for writing choreographies.
+-- | This module defines `Choreo`, the monad for choreographic programming.
 module Choreography.Choreo where
 
+import Choreography.Located
 import Choreography.Location
-import Choreography.Network
-import Control.Concurrent.Async
+import Choreography.Network hiding (Sig)
+import Control.Monad.Async
 import Control.Monad.Freer
 import Control.Monad.IO.Class
 import Control.Monad.State.Strict
-import Control.Monad.Trans.Maybe
 import Data.HashMap.Strict as HM
-import Data.Maybe
-
--- * Located computation
-
--- | A located computation. @At l m a@ denotes a computation lcoated at @l@
--- within the monad @m@ and returns a value of type @a@. It is semantically
--- equivalent to @m (Maybe a)@.
-newtype At l m a = At {unAt :: MaybeT m a}
-  deriving (Functor, Applicative, Monad, MonadTrans)
-
--- | Unwrap a located value.
---
--- /Note:/ Unwrapping a empty located value will throw an exception.
-unwrap :: (Monad m) => At l m a -> m a
-unwrap = fmap (fromMaybe $ error "internal error") . runMaybeT . unAt
-
-absent :: (Monad m) => At l m a
-absent = At $ MaybeT $ return Nothing
-
-present :: (Monad m) => a -> At l m a
-present = At . MaybeT . return . Just
 
 -- * The Choreo monad
 
--- | Effect signature for the `Choreo` monad. @m@ is a monad that represents
--- local computations.
-data ChoreoSig m a where
+-- | A different notation that might be more readable: `a @ l` is an asynchronous
+-- computation of type `a` and located at `l`.
+type a @ l = Located l Async a
+
+-- | Effect signature for the `Choreo` monad.
+data Sig a where
   Comm ::
     (Show a, Read a) =>
     Loc s ->
     Loc r ->
-    At s m a ->
-    ChoreoSig m (At r m (Async a))
+    Located s Async a ->
+    Sig (Located r Async a)
   Cond ::
     (Show a, Read a) =>
     Loc s ->
-    At s m a ->
-    (a -> Choreo m b) ->
-    ChoreoSig m b
+    Located s Async a ->
+    (a -> Choreo b) ->
+    Sig b
+  -- a variant of `Comm` where the sender and receiver are the same and the
+  -- result does not need to be serializable
   Local ::
     Loc l ->
-    At l m a ->
-    ChoreoSig m (At l m a)
+    Located l Async a ->
+    Sig (Located l Async a)
 
--- | Monad for writing choreographies.
-newtype Choreo m a = Choreo {unChoreo :: Freer (ChoreoSig m) a}
+-- | The monad for choreographies.
+newtype Choreo a = Choreo {unChoreo :: Freer Sig a}
   deriving (Functor, Applicative, Monad)
 
 -- | Communication between a sender and a receiver.
 comm ::
   (Show a, Read a) =>
-  -- | A pair of sender and receiver
-  (Loc s, Loc r) ->
+  -- | The sender
+  Loc s ->
+  -- | The receiver
+  Loc r ->
   -- | A located computation at sender
-  At s m a ->
-  Choreo m (At r m (Async a))
-comm (s, r) a = Choreo $ toFreer (Comm s r a)
+  Located s Async a ->
+  Choreo (Located r Async a)
+comm s r a = Choreo $ perform $ Comm s r a
 
 -- | Branch on the result of a located computation.
 cond ::
   (Show a, Read a) =>
-  -- | A pair of a location and a scrutinee located on it.
-  (Loc s, At s m a) ->
+  -- | The sender
+  Loc s ->
+  -- | The scrutinee
+  Located s Async a ->
   -- | A function that describes the follow-up choreographies based on the
   -- value of scrutinee.
-  (a -> Choreo m b) ->
-  Choreo m b
-cond (s, a) f = Choreo $ toFreer (Cond s a f)
+  (a -> Choreo b) ->
+  Choreo b
+cond s a f = Choreo $ perform $ Cond s a f
 
 -- | Perform a local computation at a given location.
 locally ::
   -- | Location performing the local computation.
   Loc l ->
   -- | The local computation given a constrained unwrap funciton.
-  At l m a ->
-  Choreo m (At l m a)
-locally l a = Choreo $ toFreer (Local l a)
+  Located l Async a ->
+  Choreo (Located l Async a)
+locally l a = Choreo $ perform $ Local l a
 
 -- * Endpoint projection
 
-type SeqIdMap = HashMap LocTm SeqId
+-- type SeqIdMap = HashMap LocTm SeqId
 
-epp :: (MonadIO m) => Choreo m a -> Loc l -> Network m a
-epp c t = evalStateT (interpFreer handler (unChoreo c)) HM.empty
-  where
-    handler :: (MonadIO m) => ChoreoSig m a -> StateT SeqIdMap (Network m) a
-    handler (Comm s r a)
-      -- sender and receiver are the same
-      | eqLoc s r = undefined
-      -- target is the sender
-      | eqLoc t s = do
-          i <- newSeqId s
-          -- TODO: why the double lifts?
-          v <- lift $ lift $ unwrap a
-          lift $ send (v, s, i) r
-          return absent
-      -- target is the receiver
-      | eqLoc t r = do
-          i <- newSeqId s
-          v <- lift $ recv (s, i)
-          return (present v)
-      -- target is neither the sender nor the receiver
-      | otherwise = return absent
-    handler (Cond s a f)
-      -- target is the sender
-      | eqLoc t s = do
-          i <- newSeqId s
-          v <- lift $ lift $ unwrap a
-          lift $ broadcast (v, s, i)
-          lift $ epp (f v) t
-      -- target is the receiver
-      | otherwise = do
-          i <- newSeqId s
-          v <- lift $ recv (s, i)
-          -- select messages are synchronous
-          v' <- liftIO $ wait v
-          lift $ epp (f v') t
-    handler (Local l a)
-      | eqLoc t l = do
-          v <- lift $ lift $ unwrap a
-          return (present v)
-      | otherwise = return absent
+-- newSeqId :: (Monad m) => Loc l -> StateT SeqIdMap m SeqId
+-- newSeqId l = do
+--   m <- get
+--   let l' = toLocTm l
+--   let v = HM.findWithDefault 0 l' m
+--   modify $ insert l' (v + 1)
+--   return v
 
-    newSeqId :: (Monad m) => Loc l -> StateT SeqIdMap m SeqId
-    newSeqId l = do
-      m <- get
-      let l' = toLocTm l
-      let v = HM.findWithDefault 0 l' m
-      modify (insert l' (v + 1))
-      return v
+-- handler :: (MonadIO m) => Loc t -> ChoreoSig fut m a -> StateT SeqIdMap (Network fut m) a
+-- handler t (Comm s r a) = undefined
+
+-- sender and receiver are the same
+-- \| eqLoc s r = do
+--     v <- lift $ lift $ unwrap a
+--     return (present v)
+--   -- target is the sender
+--   | eqLoc t s = do
+--       i <- newSeqId s
+--       -- TODO: why the double lifts?
+--       v <- lift $ lift $ _ a
+--       lift $ send (v, s, i) r
+--       return absent
+--   -- target is the receiver
+--   | eqLoc t r = do
+--       i <- newSeqId s
+--       v <- lift $ recv (s, i)
+--       return (present v)
+--   -- target is neither the sender nor the receiver
+--   | otherwise = return absent
+-- handler t (Cond s a f)
+--   -- target is the sender
+--   | eqLoc t s = do
+--       i <- newSeqId s
+--       v <- lift $ lift $ _ a
+--       lift $ broadcast (v, s, i)
+--       lift $ epp (f v) t
+--   -- target is the receiver
+--   | otherwise = do
+--       i <- newSeqId s
+--       v <- lift $ _ -- recv (s, i)
+--       -- select messages are synchronous
+--       v' <- liftIO $ _
+--       lift $ epp (f v') t
+-- handler t (Local l a)
+--   | eqLoc t l = do
+--       v <- lift $ lift $ _ a
+--       return (present v)
+--   | otherwise = return absent
+
+epp :: Choreo a -> Loc l -> Network a
+epp c t = undefined -- evalStateT (interp (handler t) (unChoreo c)) HM.empty
