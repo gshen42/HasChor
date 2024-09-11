@@ -32,5 +32,5 @@ data ChoreoSig ls m a where
 -- | The monad for choreographies.
 type Choreo ls m a = Freer (ChoreoSig ls m) a
 
-epp :: Choreo ls m a -> Proxy l -> Network a
+epp :: Choreo ls m a -> Proxy l -> Network m a
 epp = undefined

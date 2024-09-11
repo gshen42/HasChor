@@ -5,49 +5,42 @@
 module Choreography.Network where
 
 import Choreography.Location
-import Control.Monad.Async
+import Control.Concurrent.Future
 import Control.Monad.Freer
 import Control.Monad.IO.Class
-
--- * The Network monad
+import Control.Monad.Trans.Class
 
 -- | An id that uniquely identifies messages from the same sender.
 type SeqId = Int
 
--- | Effect NetworkSigature for the `Network` monad.
-data Sig a where
-  -- Local computation
-  LiftIO :: IO a -> Sig a
-  -- Communication
-  Send :: (Show a) => a -> LocTm -> SeqId -> Sig (Async ())
-  Recv :: (Read a) => LocTm -> SeqId -> Sig (Async a)
-  -- Knowledge of choice
-  BCast :: (Show a) => a -> SeqId -> Sig (Async [()])
+-- | Effect signature for the `Network` monad.
+data NetworkSig m a where
+  Lift :: m a -> NetworkSig m a
+  Send :: (Show a) => a -> LocTm -> SeqId -> NetworkSig m (Future ())
+  Recv :: (Read a) => LocTm -> SeqId -> NetworkSig m (Future a)
 
--- | Network programs.
-newtype Network a = Network {unNetwork :: Freer Sig a}
+-- | The monad for network programs.
+newtype Network m a = Network {unNetwork :: Freer (NetworkSig m) a}
   deriving (Functor, Applicative, Monad)
 
+-- | Perform an operation in the local monad.
+instance MonadTrans Network where
+  lift = Network . perform . Lift
+
 -- | Perform a IO operation if the local monad subsumes IO.
-instance MonadIO Network where
-  liftIO = Network . perform . LiftIO
+instance (MonadIO m) => MonadIO (Network m) where
+  liftIO = lift . liftIO
 
 -- | Send a message to a receiver.
-send :: (Show a) => a -> Loc r -> SeqId -> Network (Async ())
-send a r i = Network $ perform $ Send a (toLocTm r) i
+send :: (Show a) => a -> LocTm -> SeqId -> Network m (Future ())
+send a r i = Network $ perform $ Send a r i
 
 -- | Receive a message from a sender.
-recv :: (Read a) => Loc s -> SeqId -> Network (Async a)
-recv s i = Network $ perform $ Recv (toLocTm s) i
-
--- | Broadcast a message to all participants.
-broadcast :: (Show a) => a -> SeqId -> Network (Async [()])
-broadcast a i = Network $ perform $ BCast a i
-
--- * Message transport backends
+recv :: (Read a) => LocTm -> SeqId -> Network m (Future a)
+recv s i = Network $ perform $ Recv s i
 
 -- | A message transport backend defines a /configuration/ of type @c@ that
 -- carries necessary bookkeeping information, then defines @c@ as an instance
 -- of `Backend` and provides a `runNetwork` function.
 class Backend c where
-  runNetwork :: c -> LocTm -> Network a -> IO a
+  runNetwork :: c -> LocTm -> Network m a -> IO a
