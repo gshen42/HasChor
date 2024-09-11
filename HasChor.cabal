@@ -33,7 +33,7 @@ library
     exposed-modules:
         Choreography
         Choreography.Choreo
-        Choreography.ChoreoNew
+        Choreography.ChoreoOoO
         Choreography.Located
         Choreography.Location
         Choreography.Network
@@ -65,11 +65,3 @@ executable async-test
         , base
         , bytestring
         , network-simple
-
-executable choreo-test
-    hs-source-dirs:   tests/choreo
-    main-is:          Main.hs
-    default-language: GHC2021
-    build-depends:
-        , HasChor
-        , base
