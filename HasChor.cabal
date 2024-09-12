@@ -65,3 +65,11 @@ executable async-test
         , base
         , bytestring
         , network-simple
+
+executable choreo-test
+    hs-source-dirs:   tests/choreo
+    main-is:          Main.hs
+    default-language: GHC2021
+    build-depends:
+        , HasChor
+        , base
