@@ -5,7 +5,7 @@
 module Choreography.Network where
 
 import Choreography.Location
-import Control.Concurrent.Future
+import Control.Concurrent.Async
 import Control.Monad.Freer
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Class
@@ -16,8 +16,8 @@ type SeqId = Int
 -- | Effect signature for the `Network` monad.
 data NetworkSig m a where
   Lift :: m a -> NetworkSig m a
-  Send :: (Show a) => a -> LocTm -> SeqId -> NetworkSig m (Future ())
-  Recv :: (Read a) => LocTm -> SeqId -> NetworkSig m (Future a)
+  Send :: (Show a) => a -> LocTm -> SeqId -> NetworkSig m (Async ())
+  Recv :: (Read a) => LocTm -> SeqId -> NetworkSig m (Async a)
 
 -- | The monad for network programs.
 newtype Network m a = Network {unNetwork :: Freer (NetworkSig m) a}
@@ -32,11 +32,11 @@ instance (MonadIO m) => MonadIO (Network m) where
   liftIO = lift . liftIO
 
 -- | Send a message to a receiver.
-send :: (Show a) => a -> LocTm -> SeqId -> Network m (Future ())
+send :: (Show a) => a -> LocTm -> SeqId -> Network m (Async ())
 send a r i = Network $ perform $ Send a r i
 
 -- | Receive a message from a sender.
-recv :: (Read a) => LocTm -> SeqId -> Network m (Future a)
+recv :: (Read a) => LocTm -> SeqId -> Network m (Async a)
 recv s i = Network $ perform $ Recv s i
 
 -- | A message transport backend defines a /configuration/ of type @c@ that

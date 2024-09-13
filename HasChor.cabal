@@ -33,14 +33,11 @@ library
     exposed-modules:
         Choreography
         Choreography.Choreo
---        Choreography.ChoreoOoO
         Choreography.Located
         Choreography.Location
         Choreography.Network
 --        Choreography.Network.Http
 --        Choreography.Network.Local
-        Control.Concurrent.Future
-        Control.Monad.Async
         Control.Monad.Freer
     build-depends:
         , async
@@ -56,20 +53,11 @@ library
         , unordered-containers
         , warp
 
-executable async-test
-    hs-source-dirs:   tests/async
+executable tests
+    hs-source-dirs:   tests
     main-is:          Main.hs
     default-language: GHC2021
     build-depends:
         , HasChor
-        , base
-        , bytestring
-        , network-simple
-
-executable choreo-test
-    hs-source-dirs:   tests/choreo
-    main-is:          Main.hs
-    default-language: GHC2021
-    build-depends:
-        , HasChor
+        , async
         , base
