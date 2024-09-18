@@ -33,7 +33,7 @@ data ChoreoSig (ls :: [Loc]) (m :: Type -> Type) (a :: Type) where
     forall l {ls} {m} {a}.
     (Typeable l, Member l ls) =>
     ((Unwrappable l) => m a) ->
-    ChoreoSig ls m (a @ l)
+    ChoreoSig ls m (Async a @ l)
   CommFork ::
     forall s r {ls} {m} {a}.
     (Typeable s, Typeable r, Member s ls, Member r ls, Show a, Read a) =>
@@ -83,7 +83,7 @@ locallyFork ::
   forall l {ls} {m} {a}.
   (Typeable l, Member l ls) =>
   ((Unwrappable l) => m a) ->
-  Choreo ls m (a @ l)
+  Choreo ls m (Async a @ l)
 locallyFork act = perform (LocallyFork act)
 
 commFork ::
