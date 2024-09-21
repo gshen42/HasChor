@@ -6,6 +6,32 @@ import Choreography.Choreo
 import Choreography.Location
 import Control.Concurrent.Async
 
+-- Semi-deterministic operations:
+--
+-- data Async a -- futures
+-- wait :: (MonadIO m) => Async a -> m a
+-- waitUntil :: Async a -> Int -> IO (Maybe a)
+-- waitAny :: [Async a] -> IO a
+-- waitQuorum :: [Async Bool] -> Bool 
+-- 
+-- locally :: forall l. ((Unwrappable l) => m a) -> Choreo m a
+-- comm :: forall s r. ((Unwrappable s) => m a) -> Choreo m (Async a @ r)
+-- cond :: forall s. ((Unwrapaable s) => m a) -> (a -> Choreo m b) -> Choreo m b
+--
+-- 1. only difference from the old APIs (aside from some cosmetic changes): `comm` returns a `Async` at the receiver
+-- 2. the programming model is semi-deterministic (given the local programs are deterministic and don't use `waitUntil` or `waitAny` --- don't change behavior based on message arrival order?)
+-- 3. the non-deterministic behavarios are either seprated at different locaitons or compensated by sequence numbers
+-- 4. all these operations happen in order
+--
+-- Non-deterministic operations:
+-- 
+-- locallyFork :: forall l. ((Unwrappable l) => m a) -> Choreo m (Async a)
+-- commFork :: forall s r. ((Unwrappable s) => m a) -> Choreo m (Async a @ r)
+--
+-- 1. same semantics as locally/comm except spawning a new thread and performing the action in that thread
+-- 2. introduce concurrency at each location
+-- 3. these operations happen out of order
+
 data Client1
 
 data Client2
