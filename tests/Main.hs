@@ -3,8 +3,10 @@
 module Main where
 
 import Choreography.Choreo
+import Choreography.Located
 import Choreography.Location
 import Control.Concurrent.Async
+import Control.Monad.IO.Class
 
 -- Semi-deterministic operations:
 --
@@ -12,8 +14,8 @@ import Control.Concurrent.Async
 -- wait :: (MonadIO m) => Async a -> m a
 -- waitUntil :: Async a -> Int -> IO (Maybe a)
 -- waitAny :: [Async a] -> IO a
--- waitQuorum :: [Async Bool] -> Bool 
--- 
+-- waitQuorum :: [Async Bool] -> Bool
+--
 -- locally :: forall l. ((Unwrappable l) => m a) -> Choreo m a
 -- comm :: forall s r. ((Unwrappable s) => m a) -> Choreo m (Async a @ r)
 -- cond :: forall s. ((Unwrapaable s) => m a) -> (a -> Choreo m b) -> Choreo m b
@@ -24,7 +26,7 @@ import Control.Concurrent.Async
 -- 4. all these operations happen in order
 --
 -- Non-deterministic operations:
--- 
+--
 -- locallyFork :: forall l. ((Unwrappable l) => m a) -> Choreo m (Async a)
 -- commFork :: forall s r. ((Unwrappable s) => m a) -> Choreo m (Async a @ r)
 --
@@ -40,14 +42,16 @@ data Server
 
 ex :: ChoreoIO [Server, Client1, Client2] ()
 ex = do
-  input1 <- comm @Client1 @Server $ getLine
+  input1 <- comm @Client1 @Server $ liftIO getLine
   input2 <- comm @Client2 @Server $ return "str"
 
   commFork @Server @Client1 $ do
-    x <- wait (un input1)
+    input1 <- unwrap input1
+    x <- liftIO $ wait input1
     return (x ++ "hahaha")
   commFork @Server @Client2 $ do
-    x <- wait (un input2)
+    input2 <- unwrap input2
+    x <- liftIO $ wait input2
     return (x ++ "hahaha")
 
   return ()
