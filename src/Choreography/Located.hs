@@ -8,7 +8,10 @@ newtype a @ l = Wrap {unsafeUnwrap :: a}
 wrap :: a -> a @ l
 wrap = Wrap
 
-newtype Located l m a = Located {runLocated :: m a}
+empty :: a @ l
+empty = error "Internal Error: attemp to access a empty located value!"
+
+newtype Located l m a = Located {unLocated :: m a}
   deriving (Functor, Applicative, Monad, MonadIO)
 
 instance MonadTrans (Located l) where

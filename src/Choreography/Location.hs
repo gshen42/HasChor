@@ -5,29 +5,36 @@
 -- | This module defines locations and related funcitons.
 module Choreography.Location where
 
-import Data.Kind
-import Data.Typeable
-
--- | Type-level locations
-type Loc = Type
+import Data.Kind (Constraint, Type)
+import Data.Typeable (Proxy (Proxy), Typeable, typeRep)
+import GHC.TypeLits (KnownSymbol, symbolVal)
 
 -- | Term-level locations
 type LocTm = String
 
+-- | Type-level locations
+class LocTy l where
+  reify :: LocTm
+
+instance (Typeable l) => LocTy l where
+  reify = show (typeRep (Proxy :: Proxy l))
+
+instance (KnownSymbol l) => LocTy l where
+  reify = symbolVal (Proxy :: Proxy l)
+
+eqLoc :: forall a b. (LocTy a, LocTy b) => Bool
+eqLoc = reify @a == reify @b
+
 -- | Type-level list membership.
-type family Member (l :: Loc) (ls :: [Loc]) :: Constraint where
+type family Member l ls :: Constraint where
   Member x (x : xs) = ()
   Member x (y : xs) = Member x xs
 
--- the following two functions require the AllowAmbiguousTypes extension
--- but in practice there's no ambiguity because they are intended
--- to be used with visiable type applications
+class LocTyList ls where
+  reifyList :: [LocTm]
 
-eqLoc :: forall (a :: Loc) (b :: Loc). (Typeable a, Typeable b) => Bool
-eqLoc =
-  let p1 = Proxy :: Proxy a
-      p2 = Proxy :: Proxy b
-   in typeRep p1 == typeRep p2
+instance LocTyList [] where
+  reifyList = []
 
-reify :: forall (a :: Loc). (Typeable a) => LocTm
-reify = let p = (Proxy :: Proxy a) in show (typeRep p)
+instance (LocTy x, LocTyList xs) => LocTyList (x : xs) where
+  reifyList = reify @x : reifyList @xs
