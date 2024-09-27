@@ -5,16 +5,17 @@
 -- monad.
 module Choreography.Network.Http where
 
-import Choreography.Location (LocTm)
-import Choreography.Network hiding (run)
+import Choreography.Location
+import Choreography.Network
 import Control.Concurrent
-import Control.Concurrent.Async (Async, async)
-import Control.Monad (void)
-import Control.Monad.Freer (Freer, interpFreer)
-import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.Either (isRight)
+import Control.Concurrent.Async
+import Control.Monad
+import Control.Monad.Freer
+import Control.Monad.IO.Class
+import Control.Monad.RWS.Strict
+import Control.Monad.Trans.Class
 import Data.HashMap.Strict (HashMap, (!))
-import Data.HashMap.Strict qualified as HashMap
+import Data.HashMap.Strict qualified as HM
 import Data.Proxy (Proxy (..))
 import Network.HTTP.Client hiding (Proxy)
 import Network.Wai.Handler.Warp (run)
@@ -34,10 +35,10 @@ type Host = String
 
 type Port = Int
 
--- | Create a HTTP backend configuration from a association list that maps
+-- | Create a HTTP backend configuration from an association list that maps
 -- locations to network hosts and ports.
 mkHttpConfig :: [(LocTm, (Host, Port))] -> HttpConfig
-mkHttpConfig = HttpConfig . HashMap.fromList . fmap (fmap f)
+mkHttpConfig = HttpConfig . HM.fromList . fmap (fmap f)
   where
     f :: (Host, Port) -> BaseUrl
     f (host, port) =
@@ -48,81 +49,102 @@ mkHttpConfig = HttpConfig . HashMap.fromList . fmap (fmap f)
           baseUrlPath = ""
         }
 
--- | All locations of a HTTP configuration.
-locs :: HttpConfig -> [LocTm]
-locs = HashMap.keys . locToUrl
+-- * Message buffer
 
--- * Receive buffer
+type MsgBuf = MVar (HashMap (LocTm, SeqId) (MVar String))
 
-newtype RecvBuf = RecvBuf (MVar (HashMap (LocTm, SeqId) (MVar String)))
+emptyMsgBuf :: IO MsgBuf
+emptyMsgBuf = newMVar HM.empty
 
-newRecvBuf :: IO RecvBuf
-newRecvBuf = RecvBuf <$> newMVar HashMap.empty
-
-put :: String -> (LocTm, SeqId) -> RecvBuf -> IO ()
-put s id (RecvBuf buf) = do
+lookupMsgBuf :: (LocTm, SeqId) -> MsgBuf -> IO (MVar String)
+lookupMsgBuf id buf = do
   map <- takeMVar buf
-  case HashMap.lookup id map of
-    Just m -> do
+  case HM.lookup id map of
+    Just mvar -> do
       putMVar buf map
-      putMVar m s
+      return mvar
     Nothing -> do
-      m <- newEmptyMVar
-      putMVar buf (HashMap.insert id m map)
-      putMVar m s
+      mvar <- newEmptyMVar
+      putMVar buf (HM.insert id mvar map)
+      return mvar
 
-get :: (LocTm, SeqId) -> RecvBuf -> IO String
-get id (RecvBuf buf) = do
-  map <- takeMVar buf
-  case HashMap.lookup id map of
-    Just m -> do
-      putMVar buf map
-      takeMVar m
-    Nothing -> do
-      m <- newEmptyMVar
-      putMVar buf (HashMap.insert id m map)
-      takeMVar m
+putMsg :: (Show a) => a -> (LocTm, SeqId) -> MsgBuf -> IO ()
+putMsg msg id buf = do
+  mvar <- lookupMsgBuf id buf
+  putMVar mvar (show msg)
+
+getMsg :: (Read a) => (LocTm, SeqId) -> MsgBuf -> IO a
+getMsg id buf = do
+  mvar <- lookupMsgBuf id buf
+  read <$> takeMVar mvar
 
 -- * HTTP backend
 
--- | Servant API
-type API = "send" :> Capture "from" LocTm :> Capture "with-id" SeqId :> ReqBody '[PlainText] String :> PostNoContent
+-- the Servant API
+type API =
+  "send"
+    :> Capture "src" LocTm
+    :> Capture "sid" SeqId
+    :> ReqBody '[PlainText] String
+    :> PostNoContent
+
+api :: Proxy API
+api = Proxy
+
+server :: MsgBuf -> Server API
+server buf = handler
+  where
+    handler :: LocTm -> SeqId -> String -> Handler NoContent
+    handler rmt id msg = do
+      liftIO $ putMsg msg (rmt, id) buf
+      return NoContent
+
+sendServant :: LocTm -> SeqId -> String -> ClientM NoContent
+sendServant = client api
+
+data Ctx = Ctx
+  { cfg :: HttpConfig,
+    self :: LocTm,
+    mgr :: Manager,
+    buf :: MsgBuf
+  }
+
+runNetworkMain :: (MonadIO m) => Network m a -> RWST Ctx [Async ()] () m a
+runNetworkMain prog = interp handler (unNetwork prog)
+  where
+    handler :: (MonadIO m) => NetworkSig m a -> RWST Ctx [Async ()] () m a
+    handler (Lift act) = do
+      lift act
+    handler (Send a dst sid) = do
+      Ctx {cfg, self, mgr, buf} <- ask
+      liftIO $ async $ do
+        let env = mkClientEnv mgr (locToUrl cfg ! dst)
+        response <- runClientM (sendServant self sid (show a)) env
+        return ()
+    handler (Recv src sid) = do
+      Ctx {buf} <- ask
+      liftIO $ async $ do
+        read <$> getMsg (src, sid) buf
 
 runNetworkHttp :: (MonadIO m) => HttpConfig -> LocTm -> Network m a -> m a
 runNetworkHttp cfg self prog = do
+  -- initialization
   mgr <- liftIO $ newManager defaultManagerSettings
-  buf <- liftIO $ newRecvBuf
-  recvT <- liftIO $ forkIO (recvThread cfg buf)
-  result <- runNetworkMain mgr buf prog
-  liftIO $ threadDelay 1000000 -- wait until all outstanding requests to be completed
-  liftIO $ killThread recvT
+  buf <- liftIO emptyMsgBuf
+  let ctx = Ctx {cfg, self, mgr, buf}
+
+  -- start the server thread
+  let serverPort = baseUrlPort (locToUrl cfg ! self)
+  let app = serve api (server buf)
+  server <- liftIO $ forkIO $ run serverPort app
+  -- start the main thread
+  (result, _, sendings) <- runRWST (runNetworkMain prog) ctx ()
+
+  -- cleanup
+  forM_ sendings (liftIO . wait) -- wait for all sendings to finish
+  liftIO $ killThread server
+
   return result
-  where
-    runNetworkMain :: (MonadIO m) => Manager -> RecvBuf -> Network m a -> m a
-    runNetworkMain mgr buf = interpFreer handler
-      where
-        handler :: (MonadIO m) => NetworkSig m a -> m a
-        handler (Run m) = m
-        handler (Send a l id) = liftIO $ async $ void $ runClientM (sendServant self id (show a)) (mkClientEnv mgr (locToUrl cfg ! l))
-        handler (Recv l id) = liftIO $ async $ read <$> get (l, id) buf
-        handler (BCast a id) = traverse (handler . (\l -> Send a l id)) (locs cfg)
-
-    recvThread :: HttpConfig -> RecvBuf -> IO ()
-    recvThread cfg buf = run (baseUrlPort $ locToUrl cfg ! self) (serve api $ server buf)
-
-    api :: Proxy API
-    api = Proxy
-
-    sendServant :: LocTm -> SeqId -> String -> ClientM NoContent
-    sendServant = client api
-
-    server :: RecvBuf -> Server API
-    server buf = handler
-      where
-        handler :: LocTm -> SeqId -> String -> Handler NoContent
-        handler rmt id msg = do
-          liftIO $ put msg (rmt, id) buf
-          return NoContent
 
 instance Backend HttpConfig where
   runNetwork = runNetworkHttp

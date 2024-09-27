@@ -4,11 +4,11 @@
 -- multiple message transport backends.
 module Choreography.Network where
 
-import Choreography.Location
-import Control.Concurrent.Async
-import Control.Monad.Freer
-import Control.Monad.IO.Class
-import Control.Monad.Trans.Class
+import Choreography.Location (LocTm)
+import Control.Concurrent.Async (Async)
+import Control.Monad.Freer (Freer, perform)
+import Control.Monad.IO.Class (MonadIO (liftIO))
+import Control.Monad.Trans.Class (MonadTrans (lift))
 
 -- | An id that uniquely identifies messages from the same sender.
 type SeqId = Int
@@ -43,4 +43,4 @@ recv s i = Network $ perform $ Recv s i
 -- carries necessary bookkeeping information, then defines @c@ as an instance
 -- of `Backend` and provides a `runNetwork` function.
 class Backend c where
-  runNetwork :: c -> LocTm -> Network m a -> IO a
+  runNetwork :: (MonadIO m) => c -> LocTm -> Network m a -> m a

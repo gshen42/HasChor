@@ -36,7 +36,7 @@ library
         Choreography.Located
         Choreography.Location
         Choreography.Network
---        Choreography.Network.Http
+        Choreography.Network.Http
 --        Choreography.Network.Local
         Control.Monad.Freer
     build-depends:
