@@ -7,22 +7,21 @@ module Choreography.Location where
 
 import Data.Kind (Constraint, Type)
 import Data.Typeable (Proxy (Proxy), Typeable, typeRep)
-import GHC.TypeLits (KnownSymbol, symbolVal)
 
--- | Term-level locations
+-- | Type-level locations.
+--
+-- Use visiable type applications or `Proxy`s to refer to them.
+type Loc = Type
+
+-- | Term-level locatinos.
 type LocTm = String
 
--- | Type-level locations
-class LocTy l where
-  reify :: LocTm
+-- | Convert a type-level location to a term-level one.
+reify :: forall l. (Typeable l) => LocTm
+reify = show (typeRep (Proxy :: Proxy l))
 
-instance (Typeable l) => LocTy l where
-  reify = show (typeRep (Proxy :: Proxy l))
-
-instance (KnownSymbol l) => LocTy l where
-  reify = symbolVal (Proxy :: Proxy l)
-
-eqLoc :: forall a b. (LocTy a, LocTy b) => Bool
+-- | Comparision between type-level locations.
+eqLoc :: forall a b. (Typeable a, Typeable b) => Bool
 eqLoc = reify @a == reify @b
 
 -- | Type-level list membership.
@@ -30,11 +29,12 @@ type family Member l ls :: Constraint where
   Member x (x : xs) = ()
   Member x (y : xs) = Member x xs
 
-class LocTyList ls where
+-- | A list whose elements are all `Typeable`.
+class TypeableList ls where
   reifyList :: [LocTm]
 
-instance LocTyList [] where
+instance TypeableList [] where
   reifyList = []
 
-instance (LocTy x, LocTyList xs) => LocTyList (x : xs) where
+instance (Typeable x, TypeableList xs) => TypeableList (x : xs) where
   reifyList = reify @x : reifyList @xs

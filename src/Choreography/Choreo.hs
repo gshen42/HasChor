@@ -22,28 +22,28 @@ import Data.Typeable (Typeable)
 data ChoreoSig ls m a where
   Locally ::
     forall l {ls} {m} {a}.
-    (LocTy l, Member l ls) =>
+    (Typeable l, Member l ls) =>
     Located l m a ->
     ChoreoSig ls m (a @ l)
   Comm ::
     forall s r {ls} {m} {a}.
-    (LocTy s, LocTy r, Member s ls, Member r ls, Show a, Read a) =>
+    (Typeable s, Typeable r, Member s ls, Member r ls, Show a, Read a) =>
     Located s m a ->
     ChoreoSig ls m (Async a @ r)
   Cond ::
     forall s {b} {ls} {m} {a}.
-    (LocTy s, Member s ls, LocTyList ls, Show a, Read a) =>
+    (Typeable s, Member s ls, TypeableList ls, Show a, Read a) =>
     Located s m a ->
     (a -> Choreo ls m b) ->
     ChoreoSig ls m b
   LocallyFork ::
     forall l {ls} {m} {a}.
-    (LocTy l, Member l ls) =>
+    (Typeable l, Member l ls) =>
     Located l m a ->
     ChoreoSig ls m (Async a @ l)
   CommFork ::
     forall s r {ls} {m} {a}.
-    (LocTy s, LocTy r, Member s ls, Member r ls, Show a, Read a) =>
+    (Typeable s, Typeable r, Member s ls, Member r ls, Show a, Read a) =>
     Located s m a ->
     ChoreoSig ls m (Async a @ r)
 
@@ -54,7 +54,7 @@ type Choreo ls m a = Freer (ChoreoSig ls m) a
 
 locally ::
   forall l {ls} {m} {a}.
-  (LocTy l, Member l ls) =>
+  (Typeable l, Member l ls) =>
   Located l m a ->
   Choreo ls m (a @ l)
 locally act = perform (Locally act)
@@ -64,14 +64,14 @@ locally act = perform (Locally act)
 
 comm ::
   forall s r {ls} {m} {a}.
-  (LocTy s, LocTy r, Member s ls, Member r ls, Show a, Read a) =>
+  (Typeable s, Typeable r, Member s ls, Member r ls, Show a, Read a) =>
   Located s m a ->
   Choreo ls m (Async a @ r)
 comm act = perform (Comm @s @r act)
 
 commSync ::
   forall s r {ls} {m} {a}.
-  (LocTy s, LocTy r, Member s ls, Member r ls, Show a, Read a, MonadIO m) =>
+  (Typeable s, Typeable r, Member s ls, Member r ls, Show a, Read a, MonadIO m) =>
   Located s m a ->
   Choreo ls m (a @ r)
 commSync act = do
@@ -82,7 +82,7 @@ commSync act = do
 
 cond ::
   forall s {b} {ls} {m} {a}.
-  (LocTy s, Member s ls, LocTyList ls, Show a, Read a) =>
+  (Typeable s, Member s ls, TypeableList ls, Show a, Read a) =>
   Located s m a ->
   (a -> Choreo ls m b) ->
   Choreo ls m b
@@ -90,14 +90,14 @@ cond act k = perform (Cond @s act k)
 
 locallyFork ::
   forall l {ls} {m} {a}.
-  (LocTy l, Member l ls) =>
+  (Typeable l, Member l ls) =>
   Located l m a ->
   Choreo ls m (Async a @ l)
 locallyFork act = perform (LocallyFork act)
 
 commFork ::
   forall s r {ls} {m} {a}.
-  (LocTy s, LocTy r, Member s ls, Member r ls, Show a, Read a) =>
+  (Typeable s, Typeable r, Member s ls, Member r ls, Show a, Read a) =>
   Located s m a ->
   Choreo ls m (Async a @ r)
 commFork act = perform (CommFork @s @r act)
@@ -118,7 +118,7 @@ initState =
 
 -- Get the next sequence ID for a location (return 0 if there's none) and set
 -- the next sequence ID to the current value plus 1.
-newSeqId :: forall l {m}. (LocTy l, MonadState EppState m) => m SeqId
+newSeqId :: forall l {m}. (Typeable l, MonadState EppState m) => m SeqId
 newSeqId = do
   s <- get
   let l = reify @l
@@ -131,7 +131,7 @@ waitSentMsgs l = forM_ l (liftIO . wait)
 
 epp ::
   forall t {ls} {m} {a}.
-  (LocTy t, MonadIO m) =>
+  (Typeable t, MonadIO m) =>
   Choreo ls m a ->
   Network m a
 epp c = do
@@ -141,7 +141,7 @@ epp c = do
 
 epp1 ::
   forall t {ls} {m} {a} {mm}.
-  (LocTy t, MonadIO m) =>
+  (Typeable t, MonadIO m) =>
   Choreo ls m a ->
   StateT EppState (Network m) a
 epp1 = interp (handler @t)
@@ -152,29 +152,29 @@ lift2 = lift . lift
 
 handler ::
   forall t {ls} {m} {a} {mm}.
-  (LocTy t, MonadIO m) =>
+  (Typeable t, MonadIO m) =>
   ChoreoSig ls m a ->
   StateT EppState (Network m) a
 handler (Locally @l act)
   | eqLoc @t @l = do
       a <- lift2 $ unLocated act
-      return (wrap a)
-  | otherwise = return empty
+      return (Wrap a)
+  | otherwise = return Empty
 handler (Comm @s @r act)
   | eqLoc @s @r = do
       a <- lift2 $ unLocated act
       aa <- liftIO $ async (return a)
-      return (wrap aa)
+      return (Wrap aa)
   | eqLoc @t @s = do
       id <- newSeqId @s
       a <- lift2 $ unLocated act
       lift $ send a (reify @r) id
-      return empty
+      return Empty
   | eqLoc @t @r = do
       id <- newSeqId @s
       aa <- lift $ recv (reify @s) id
-      return (wrap aa)
-  | otherwise = return empty
+      return (Wrap aa)
+  | otherwise = return Empty
 handler (Cond @s act k)
   | eqLoc @t @s = do
       id <- newSeqId @s
