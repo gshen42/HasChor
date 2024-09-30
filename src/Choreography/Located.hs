@@ -15,6 +15,9 @@ unsafeUnwrap Empty = error "Internal Error: attemp to access a empty located val
 newtype Located l m a = Located {unLocated :: m a}
   deriving (Functor, Applicative, Monad, MonadIO)
 
+-- | Located IO computations.
+type LocatedIO l a = Located l IO a
+
 instance MonadTrans (Located l) where
   lift = Located
 

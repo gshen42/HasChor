@@ -1,60 +1,87 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Main where
 
-import Choreography.Choreo
-import Choreography.Located
-import Choreography.Location
+import Choreography
 import Control.Concurrent.Async
+import Control.Monad
 import Control.Monad.IO.Class
+import System.Environment
 
--- Semi-deterministic operations:
---
--- data Async a -- futures
--- wait :: (MonadIO m) => Async a -> m a
--- waitUntil :: Async a -> Int -> IO (Maybe a)
--- waitAny :: [Async a] -> IO a
--- waitQuorum :: [Async Bool] -> Bool
---
--- locally :: forall l. ((Unwrappable l) => m a) -> Choreo m a
--- comm :: forall s r. ((Unwrappable s) => m a) -> Choreo m (Async a @ r)
--- cond :: forall s. ((Unwrapaable s) => m a) -> (a -> Choreo m b) -> Choreo m b
---
--- 1. only difference from the old APIs (aside from some cosmetic changes): `comm` returns a `Async` at the receiver
--- 2. the programming model is semi-deterministic (given the local programs are deterministic and don't use `waitUntil` or `waitAny` --- don't change behavior based on message arrival order?)
--- 3. the non-deterministic behavarios are either seprated at different locaitons or compensated by sequence numbers
--- 4. all these operations happen in order
---
--- Non-deterministic operations:
---
--- locallyFork :: forall l. ((Unwrappable l) => m a) -> Choreo m (Async a)
--- commFork :: forall s r. ((Unwrappable s) => m a) -> Choreo m (Async a @ r)
---
--- 1. same semantics as locally/comm except spawning a new thread and performing the action in that thread
--- 2. introduce concurrency at each location
--- 3. these operations happen out of order
+data Alice
 
-data Client1
+data Bob
 
-data Client2
+data Carol
 
-data Server
+data Leader
 
-ex :: ChoreoIO [Server, Client1, Client2] ()
-ex = do
-  input1 <- comm @Client1 @Server $ liftIO getLine
-  input2 <- comm @Client2 @Server $ return "str"
+makeProposal :: LocatedIO l String
+makeProposal = liftIO getLine
 
-  commFork @Server @Client1 $ do
-    input1 <- unwrap input1
-    x <- liftIO $ wait input1
-    return (x ++ "hahaha")
-  commFork @Server @Client2 $ do
-    input2 <- unwrap input2
-    x <- liftIO $ wait input2
-    return (x ++ "hahaha")
+makeDecision :: Async String @ l -> LocatedIO l Bool
+makeDecision p = do
+  p <- unwrap p
+  p <- liftIO $ wait p
+  liftIO $ putStrLn ("The leader's latest proposal is:" ++ p)
+  liftIO $ putStrLn "Do you accept the proposal?"
+  read <$> liftIO getLine
 
-  return ()
+checkDecision :: Async Bool -> Async Bool -> IO Bool
+checkDecision a1 a2 = do
+  x <- wait a1
+  y <- wait a2
+  return (x && x)
+
+consensusSimple :: ChoreoIO [Alice, Bob, Carol, Leader] (Bool @ Leader)
+consensusSimple = do
+  -- the leader makes a proposal and sends it to all the participants
+  proposal <- locally @Leader makeProposal
+  proposalA <- comm @Leader @Alice proposal
+  proposalB <- comm @Leader @Bob proposal
+  proposalC <- comm @Leader @Carol proposal
+
+  -- paticipants decide whether to accept the proposal and inform the leader
+  decisionA <- locally @Alice (makeDecision proposalA)
+  decisionA' <- comm @Alice @Leader decisionA
+
+  decisionB <- locally @Bob (makeDecision proposalB)
+  decisionB' <- comm @Bob @Leader decisionB
+
+  decisionC <- locally @Carol (makeDecision proposalC)
+  decisionC' <- comm @Carol @Leader decisionC
+
+  -- the leader check if consensus (a quorum of paticipants accept the proposal)
+  -- has reached. If not, recurse to make a new proposal
+  reached <- locally @Leader $ do
+    x <- unwrap decisionA'
+    y <- unwrap decisionB'
+    z <- unwrap decisionC'
+    xx <- liftIO $ async $ checkDecision x y
+    yy <- liftIO $ async $ checkDecision y z
+    zz <- liftIO $ async $ checkDecision x z
+
+    (_, a) <- liftIO $ waitAny [xx, yy, zz]
+    return a
+
+  cond reached $ \case
+    True -> return reached
+    False -> consensusSimple
 
 main :: IO ()
-main = putStrLn "hello"
+main = do
+  [loc] <- getArgs
+  void $ case loc of
+    "Leader" -> runChoreo @Leader cfg consensusSimple
+    "Alice" -> runChoreo @Alice cfg consensusSimple
+    "Bob" -> runChoreo @Bob cfg consensusSimple
+    "Carol" -> runChoreo @Carol cfg consensusSimple
+  where
+    cfg =
+      mkHttpConfig
+        [ ("Leader", ("localhost", 8000)),
+          ("Alice", ("localhost", 8001)),
+          ("Bob", ("localhost", 8002)),
+          ("Carol", ("localhost", 8003))
+        ]

@@ -28,12 +28,12 @@ data ChoreoSig ls m a where
   Comm ::
     forall s r {ls} {m} {a}.
     (Typeable s, Typeable r, Member s ls, Member r ls, Show a, Read a) =>
-    Located s m a ->
+    a @ s ->
     ChoreoSig ls m (Async a @ r)
   Cond ::
     forall s {b} {ls} {m} {a}.
     (Typeable s, Member s ls, TypeableList ls, Show a, Read a) =>
-    Located s m a ->
+    a @ s ->
     (a -> Choreo ls m b) ->
     ChoreoSig ls m b
   LocallyFork ::
@@ -65,17 +65,17 @@ locally act = perform (Locally act)
 comm ::
   forall s r {ls} {m} {a}.
   (Typeable s, Typeable r, Member s ls, Member r ls, Show a, Read a) =>
-  Located s m a ->
+  a @ s ->
   Choreo ls m (Async a @ r)
-comm act = perform (Comm @s @r act)
+comm val = perform (Comm @s @r val)
 
 commSync ::
   forall s r {ls} {m} {a}.
   (Typeable s, Typeable r, Member s ls, Member r ls, Show a, Read a, MonadIO m) =>
-  Located s m a ->
+  a @ s ->
   Choreo ls m (a @ r)
-commSync act = do
-  fut <- comm @s @r act
+commSync val = do
+  fut <- comm @s @r val
   locally $ do
     a <- unwrap fut
     liftIO $ wait a
@@ -83,10 +83,10 @@ commSync act = do
 cond ::
   forall s {b} {ls} {m} {a}.
   (Typeable s, Member s ls, TypeableList ls, Show a, Read a) =>
-  Located s m a ->
+  a @ s ->
   (a -> Choreo ls m b) ->
   Choreo ls m b
-cond act k = perform (Cond @s act k)
+cond val k = perform (Cond @s val k)
 
 locallyFork ::
   forall l {ls} {m} {a}.
@@ -160,14 +160,14 @@ handler (Locally @l act)
       a <- lift2 $ unLocated act
       return (Wrap a)
   | otherwise = return Empty
-handler (Comm @s @r act)
+handler (Comm @s @r val)
   | eqLoc @s @r = do
-      a <- lift2 $ unLocated act
+      let a = unsafeUnwrap val
       aa <- liftIO $ async (return a)
       return (Wrap aa)
   | eqLoc @t @s = do
+      let a = unsafeUnwrap val
       id <- newSeqId @s
-      a <- lift2 $ unLocated act
       lift $ send a (reify @r) id
       return Empty
   | eqLoc @t @r = do
@@ -175,10 +175,10 @@ handler (Comm @s @r act)
       aa <- lift $ recv (reify @s) id
       return (Wrap aa)
   | otherwise = return Empty
-handler (Cond @s act k)
+handler (Cond @s val k)
   | eqLoc @t @s = do
+      let a = unsafeUnwrap val
       id <- newSeqId @s
-      a <- lift2 $ unLocated act
       mapM_ (\r -> lift $ send a r id) (reifyList @ls)
       epp1 @t (k a)
   | otherwise = do

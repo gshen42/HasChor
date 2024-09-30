@@ -10,6 +10,7 @@ module Choreography
     -- * Located values and compuations
     type (@),
     Located,
+    LocatedIO,
     unwrap,
 
     -- * Choreographies
@@ -29,6 +30,7 @@ module Choreography
     mkHttpConfig,
 
     -- * Running choreographies
+    runChoreo,
   )
 where
 

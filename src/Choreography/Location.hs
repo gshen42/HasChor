@@ -33,8 +33,8 @@ type family Member l ls :: Constraint where
 class TypeableList ls where
   reifyList :: [LocTm]
 
-instance TypeableList [] where
+instance TypeableList '[] where
   reifyList = []
 
-instance (Typeable x, TypeableList xs) => TypeableList (x : xs) where
+instance (Typeable x, TypeableList xs) => TypeableList (x ': xs) where
   reifyList = reify @x : reifyList @xs
