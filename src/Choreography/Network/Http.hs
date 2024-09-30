@@ -51,12 +51,12 @@ mkHttpConfig = HttpConfig . HM.fromList . fmap (fmap f)
 
 -- * Message buffer
 
-type MsgBuf = MVar (HashMap (LocTm, SeqId) (MVar String))
+type MsgBuf = MVar (HashMap (LocTm, SeqNum) (MVar String))
 
 emptyMsgBuf :: IO MsgBuf
 emptyMsgBuf = newMVar HM.empty
 
-lookupMsgBuf :: (LocTm, SeqId) -> MsgBuf -> IO (MVar String)
+lookupMsgBuf :: (LocTm, SeqNum) -> MsgBuf -> IO (MVar String)
 lookupMsgBuf id buf = do
   map <- takeMVar buf
   case HM.lookup id map of
@@ -68,23 +68,26 @@ lookupMsgBuf id buf = do
       putMVar buf (HM.insert id mvar map)
       return mvar
 
-putMsg :: (Show a) => a -> (LocTm, SeqId) -> MsgBuf -> IO ()
+putMsg :: (Show a) => a -> (LocTm, SeqNum) -> MsgBuf -> IO ()
 putMsg msg id buf = do
   mvar <- lookupMsgBuf id buf
   putMVar mvar (show msg)
 
-getMsg :: (Read a) => (LocTm, SeqId) -> MsgBuf -> IO a
+getMsg :: (Read a) => (LocTm, SeqNum) -> MsgBuf -> IO a
 getMsg id buf = do
   mvar <- lookupMsgBuf id buf
   read <$> takeMVar mvar
 
 -- * HTTP backend
 
+logMsg :: String -> IO ()
+logMsg msg = putStrLn ("* Http backend: " ++ msg)
+
 -- the Servant API
 type API =
   "send"
     :> Capture "src" LocTm
-    :> Capture "sid" SeqId
+    :> Capture "sid" SeqNum
     :> ReqBody '[PlainText] String
     :> PostNoContent
 
@@ -94,13 +97,13 @@ api = Proxy
 server :: MsgBuf -> Server API
 server buf = handler
   where
-    handler :: LocTm -> SeqId -> String -> Handler NoContent
+    handler :: LocTm -> SeqNum -> String -> Handler NoContent
     handler rmt id msg = do
-      liftIO $ print ("* Http Backend: Received " ++ msg ++ " from " ++ rmt ++ " with sequence number " ++ show id)
+      liftIO $ logMsg ("Received " ++ msg ++ " from " ++ rmt ++ " with sequence number " ++ show id)
       liftIO $ putMsg msg (rmt, id) buf
       return NoContent
 
-sendServant :: LocTm -> SeqId -> String -> ClientM NoContent
+sendServant :: LocTm -> SeqNum -> String -> ClientM NoContent
 sendServant = client api
 
 data Ctx = Ctx
@@ -109,9 +112,6 @@ data Ctx = Ctx
     mgr :: Manager,
     buf :: MsgBuf
   }
-
-logMsg :: String -> IO ()
-logMsg msg = putStrLn ("* Http backend: " ++ msg)
 
 runNetworkMain :: (MonadIO m) => Network m a -> RWST Ctx [Async ()] () m a
 runNetworkMain prog = interp handler (unNetwork prog)

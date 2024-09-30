@@ -104,30 +104,16 @@ commFork act = perform (CommFork @s @r act)
 
 type ChoreoIO ls a = Choreo ls IO a
 
-data EppState = EppState
-  { seqIdMap :: HashMap LocTm SeqId,
-    sentMsgs :: [Async ()]
-  }
+type SeqNumMap = HashMap (LocTm, LocTm) SeqNum
 
-initState :: EppState
-initState =
-  EppState
-    { seqIdMap = HM.empty,
-      sentMsgs = []
-    }
-
--- Get the next sequence ID for a location (return 0 if there's none) and set
--- the next sequence ID to the current value plus 1.
-newSeqId :: forall l {m}. (Typeable l, MonadState EppState m) => m SeqId
-newSeqId = do
-  s <- get
-  let l = reify @l
-  let v = HM.findWithDefault 0 l (seqIdMap s)
-  put $ s {seqIdMap = HM.insert l (v + 1) (seqIdMap s)}
+-- Get the next sequence number for a location pair (return 0 if there's none)
+-- and set the next sequence number to the current value plus 1.
+newSeqNum :: (MonadState SeqNumMap m) => (LocTm, LocTm) -> m SeqNum
+newSeqNum key = do
+  map <- get
+  let v = HM.findWithDefault 0 key map
+  put (HM.insert key (v + 1) map)
   return v
-
-waitSentMsgs :: (MonadIO m) => [Async ()] -> m ()
-waitSentMsgs l = forM_ l (liftIO . wait)
 
 epp ::
   forall t {ls} {m} {a}.
@@ -135,15 +121,14 @@ epp ::
   Choreo ls m a ->
   Network m a
 epp c = do
-  (a, s) <- runStateT (epp1 @t c) initState
-  waitSentMsgs (sentMsgs s)
+  (a, _) <- runStateT (epp1 @t c) HM.empty
   return a
 
 epp1 ::
   forall t {ls} {m} {a} {mm}.
   (Typeable t, MonadIO m) =>
   Choreo ls m a ->
-  StateT EppState (Network m) a
+  StateT SeqNumMap (Network m) a
 epp1 = interp (handler @t)
 
 -- TODO: better way to write this?
@@ -154,7 +139,7 @@ handler ::
   forall t {ls} {m} {a} {mm}.
   (Typeable t, MonadIO m) =>
   ChoreoSig ls m a ->
-  StateT EppState (Network m) a
+  StateT SeqNumMap (Network m) a
 handler (Locally @l act)
   | eqLoc @t @l = do
       a <- lift2 $ unLocated act
@@ -167,22 +152,26 @@ handler (Comm @s @r val)
       return (Wrap aa)
   | eqLoc @t @s = do
       let a = unsafeUnwrap val
-      id <- newSeqId @s
+      id <- newSeqNum (reify @s, reify @r)
       lift $ send a (reify @r) id
       return Empty
   | eqLoc @t @r = do
-      id <- newSeqId @s
+      id <- newSeqNum (reify @s, reify @r)
       aa <- lift $ recv (reify @s) id
       return (Wrap aa)
   | otherwise = return Empty
 handler (Cond @s val k)
   | eqLoc @t @s = do
       let a = unsafeUnwrap val
-      id <- newSeqId @s
-      mapM_ (\r -> lift $ send a r id) (reifyList @ls)
+      mapM_
+        ( \r -> do
+            id <- newSeqNum (reify @s, r)
+            lift $ send a r id
+        )
+        (reifyList @ls)
       epp1 @t (k a)
   | otherwise = do
-      id <- newSeqId @s
+      id <- newSeqNum (reify @s, reify @t)
       aa <- lift $ recv (reify @s) id
       a <- liftIO $ wait aa
       epp1 @t (k a)
