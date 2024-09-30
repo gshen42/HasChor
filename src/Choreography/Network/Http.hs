@@ -96,6 +96,7 @@ server buf = handler
   where
     handler :: LocTm -> SeqId -> String -> Handler NoContent
     handler rmt id msg = do
+      liftIO $ print ("* Http Backend: Received " ++ msg ++ " from " ++ rmt ++ " with sequence number " ++ show id)
       liftIO $ putMsg msg (rmt, id) buf
       return NoContent
 
@@ -109,6 +110,9 @@ data Ctx = Ctx
     buf :: MsgBuf
   }
 
+logMsg :: String -> IO ()
+logMsg msg = putStrLn ("* Http backend: " ++ msg)
+
 runNetworkMain :: (MonadIO m) => Network m a -> RWST Ctx [Async ()] () m a
 runNetworkMain prog = interp handler (unNetwork prog)
   where
@@ -116,12 +120,14 @@ runNetworkMain prog = interp handler (unNetwork prog)
     handler (Lift act) = do
       lift act
     handler (Send a dst sid) = do
+      liftIO $ logMsg ("Asynchronously send " ++ show a ++ " to " ++ dst ++ " with sequence number " ++ show sid)
       Ctx {cfg, self, mgr, buf} <- ask
       liftIO $ async $ do
         let env = mkClientEnv mgr (locToUrl cfg ! dst)
         response <- runClientM (sendServant self sid (show a)) env
-        return ()
+        either (logMsg . show) (void . return) response
     handler (Recv src sid) = do
+      liftIO $ logMsg ("Asynchronously wait for a message from " ++ src ++ " with sequence number " ++ show sid)
       Ctx {buf} <- ask
       liftIO $ async $ do
         read <$> getMsg (src, sid) buf
