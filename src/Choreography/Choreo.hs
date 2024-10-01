@@ -2,9 +2,11 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
 
+-- | This module defines `Choreo`, the monad for choreographic programming,
+-- along with  a endpoint projection function `epp` for generating a network
+-- program from a choreography.
 module Choreography.Choreo where
 
-import Choreography.Located
 import Choreography.Location
 import Choreography.Network
 import Control.Concurrent.Async (Async, async, wait)
@@ -18,12 +20,26 @@ import Data.HashMap.Strict qualified as HM
 import Data.Kind (Type)
 import Data.Typeable (Typeable)
 
+-- * Located values
+
+-- | A value of type `a` at location `l`.
+data a @ l = Wrap a | Empty
+
+unsafeUnwrap :: a @ l -> a
+unsafeUnwrap (Wrap a) = a
+unsafeUnwrap Empty = error "* Internal error: attemp to access an empty located value."
+
+-- * Choreographies
+
+-- | An unwrap function that only unwraps values at a specific location.
+type Unwrap l = forall a. a @ l -> a
+
 -- | Signature of the `Choreo` monad.
 data ChoreoSig ls m a where
   Locally ::
     forall l {ls} {m} {a}.
     (Typeable l, Member l ls) =>
-    Located l m a ->
+    (Unwrap l -> m a) ->
     ChoreoSig ls m (a @ l)
   Comm ::
     forall s r {ls} {m} {a}.
@@ -36,31 +52,21 @@ data ChoreoSig ls m a where
     a @ s ->
     (a -> Choreo ls m b) ->
     ChoreoSig ls m b
-  LocallyFork ::
-    forall l {ls} {m} {a}.
-    (Typeable l, Member l ls) =>
-    Located l m a ->
-    ChoreoSig ls m (Async a @ l)
-  CommFork ::
-    forall s r {ls} {m} {a}.
-    (Typeable s, Typeable r, Member s ls, Member r ls, Show a, Read a) =>
-    Located s m a ->
-    ChoreoSig ls m (Async a @ r)
 
--- | The monad for choreographies.
+-- | The monad for choreographic programming.
 type Choreo ls m a = Freer (ChoreoSig ls m) a
+
+-- | An shorthand for `Choreo` with the local monad beding `IO`.
+type ChoreoIO ls a = Choreo ls IO a
 
 -- TODO: is there a way to avoid repeating the type signatures?
 
 locally ::
   forall l {ls} {m} {a}.
   (Typeable l, Member l ls) =>
-  Located l m a ->
+  (Unwrap l -> m a) ->
   Choreo ls m (a @ l)
 locally act = perform (Locally act)
-
--- TODO: use the `async-lifted` package to make the following two functions
--- work for any monad m that implements MonadIO
 
 comm ::
   forall s r {ls} {m} {a}.
@@ -76,9 +82,8 @@ commSync ::
   Choreo ls m (a @ r)
 commSync val = do
   fut <- comm @s @r val
-  locally $ do
-    a <- unwrap fut
-    liftIO $ wait a
+  locally $ \un -> do
+    liftIO $ wait (un fut)
 
 cond ::
   forall s {b} {ls} {m} {a}.
@@ -88,21 +93,7 @@ cond ::
   Choreo ls m b
 cond val k = perform (Cond @s val k)
 
-locallyFork ::
-  forall l {ls} {m} {a}.
-  (Typeable l, Member l ls) =>
-  Located l m a ->
-  Choreo ls m (Async a @ l)
-locallyFork act = perform (LocallyFork act)
-
-commFork ::
-  forall s r {ls} {m} {a}.
-  (Typeable s, Typeable r, Member s ls, Member r ls, Show a, Read a) =>
-  Located s m a ->
-  Choreo ls m (Async a @ r)
-commFork act = perform (CommFork @s @r act)
-
-type ChoreoIO ls a = Choreo ls IO a
+-- * Endpoint projection
 
 type SeqNumMap = HashMap (LocTm, LocTm) SeqNum
 
@@ -131,10 +122,6 @@ epp1 ::
   StateT SeqNumMap (Network m) a
 epp1 = interp (handler @t)
 
--- TODO: better way to write this?
-lift2 :: (MonadTrans t1, MonadTrans t2, Monad m, Monad (t2 m)) => m a -> t1 (t2 m) a
-lift2 = lift . lift
-
 handler ::
   forall t {ls} {m} {a} {mm}.
   (Typeable t, MonadIO m) =>
@@ -142,7 +129,7 @@ handler ::
   StateT SeqNumMap (Network m) a
 handler (Locally @l act)
   | eqLoc @t @l = do
-      a <- lift2 $ unLocated act
+      a <- lift $ lift $ act unsafeUnwrap
       return (Wrap a)
   | otherwise = return Empty
 handler (Comm @s @r val)
@@ -175,5 +162,3 @@ handler (Cond @s val k)
       aa <- lift $ recv (reify @s) id
       a <- liftIO $ wait aa
       epp1 @t (k a)
-handler (LocallyFork @l act) = undefined
-handler (CommFork @s @r act) = undefined

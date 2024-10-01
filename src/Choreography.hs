@@ -7,23 +7,18 @@ module Choreography
   ( -- * Locations
     Loc,
 
-    -- * Located values and compuations
-    type (@),
-    Located,
-    LocatedIO,
-    unwrap,
-
     -- * Choreographies
+    type (@),
+    Unwrap,
     Choreo,
     ChoreoIO,
     locally,
     comm,
     cond,
-    commFork,
 
     -- * Message transport backends
 
-    -- * The HTTP backend
+    -- ** The HTTP backend
     Host,
     Port,
     HttpConfig,
@@ -35,7 +30,6 @@ module Choreography
 where
 
 import Choreography.Choreo
-import Choreography.Located
 import Choreography.Location
 import Choreography.Network
 import Choreography.Network.Http
