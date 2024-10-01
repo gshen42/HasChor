@@ -47,7 +47,6 @@ library
         , servant
         , servant-client
         , servant-server
-        , template-haskell
         , transformers
         , unordered-containers
         , warp
@@ -60,3 +59,4 @@ executable tests
         , HasChor
         , async
         , base
+        , stm

@@ -5,7 +5,7 @@ module Main where
 
 import Choreography
 import Control.Concurrent.Async
-import Control.Concurrent.MVar
+import Control.Concurrent.STM
 import Control.Monad
 import Control.Monad.IO.Class
 import System.Environment
@@ -37,12 +37,12 @@ consensus = do
   responseC <- locally @Carol (evalProposal proposalC)
   responseL3 <- comm @Carol @Leader responseC
 
-  -- the leader checks if a quorum of participants accept the proposal. If not,
-  -- recurse to retry a new proposal.
-  quorumOrNot <- locally @Leader (checkResponses responseL1 responseL2 responseL3)
+  -- the leader checks if a quorum of participants accept or refute the proposal
+  acceptOrRefute <- locally @Leader (checkQuorum responseL1 responseL2 responseL3)
 
-  cond quorumOrNot $ \case
-    True -> return quorumOrNot
+  -- recurse if no quorum of accept
+  cond acceptOrRefute $ \case
+    True -> return acceptOrRefute
     False -> consensus
 
 makeProposal :: Unwrap l -> IO String
@@ -57,26 +57,36 @@ evalProposal pAtl un = do
   putStrLn "Do you accept the proposal? (please type in True or False)"
   read <$> getLine
 
-checkResponses ::
+checkQuorum ::
   Async Bool @ l ->
   Async Bool @ l ->
   Async Bool @ l ->
   Unwrap l ->
   IO Bool
-checkResponses x y z un = do
-  xx <- liftIO $ async $ checkTwo (un x) (un y)
-  yy <- liftIO $ async $ checkTwo (un y) (un z)
-  zz <- liftIO $ async $ checkTwo (un x) (un z)
+checkQuorum x y z un = do
+  counterTrue <- newTVarIO 0
+  counterFalse <- newTVarIO 0
 
-  (_, a) <- liftIO $ waitAny [xx, yy, zz]
+  async $ do
+    xx <- wait (un x)
+    atomically $ modifyTVar (if xx then counterTrue else counterFalse) (+ 1)
+  async $ do
+    yy <- wait (un y)
+    atomically $ modifyTVar (if yy then counterTrue else counterFalse) (+ 1)
+  async $ do
+    zz <- wait (un z)
+    atomically $ modifyTVar (if zz then counterTrue else counterFalse) (+ 1)
 
-  return a
+  atomically $ do
+    x <- readTVar counterTrue
+    y <- readTVar counterFalse
 
-checkTwo :: Async Bool -> Async Bool -> IO Bool
-checkTwo a1 a2 = do
-  x <- wait a1
-  y <- wait a2
-  return (x && y)
+    if x >= 2
+      then return True
+      else
+        if y >= 2
+          then return False
+          else retry
 
 main :: IO ()
 main = do

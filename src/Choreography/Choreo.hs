@@ -155,7 +155,7 @@ handler (Cond @s val k)
             id <- newSeqNum (reify @s, r)
             lift $ send a r id
         )
-        (reifyList @ls)
+        (filter (/= reify @t) (reifyList @ls))
       epp1 @t (k a)
   | otherwise = do
       id <- newSeqNum (reify @s, reify @t)
