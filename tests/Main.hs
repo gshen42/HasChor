@@ -4,10 +4,12 @@
 module Main where
 
 import Choreography
+import Choreography.Macro
 import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Monad
 import Control.Monad.IO.Class
+import Data.Proxy
 import System.Environment
 
 data Alice
@@ -22,6 +24,10 @@ consensus :: ChoreoIO [Alice, Bob, Carol, Leader] (Bool @ Leader)
 consensus = do
   -- the leader makes a proposal and sends it to all the participants
   proposalL <- locally @Leader makeProposal
+
+  -- forEach @[Alice, Bob, Carol] $ \(_ :: Proxy l) -> do
+  --   comm @Leader @l proposalL
+  --   return ()
 
   proposalA <- comm @Leader @Alice proposalL
   proposalB <- comm @Leader @Bob proposalL

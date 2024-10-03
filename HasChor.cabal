@@ -34,6 +34,7 @@ library
         Choreography
         Choreography.Choreo
         Choreography.Location
+        Choreography.Macro
         Choreography.Network
         Choreography.Network.Http
 --        Choreography.Network.Local
