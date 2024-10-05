@@ -61,3 +61,4 @@ executable tests
         , async
         , base
         , stm
+        , mtl

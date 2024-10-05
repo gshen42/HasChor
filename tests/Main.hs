@@ -9,6 +9,7 @@ import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Monad
 import Control.Monad.IO.Class
+import Control.Monad.State
 import Data.Proxy
 import System.Environment
 
@@ -44,7 +45,7 @@ consensus = do
   responseL3 <- comm @Carol @Leader responseC
 
   -- the leader checks if a quorum of participants accept or refute the proposal
-  acceptOrRefute <- locally @Leader (checkQuorum responseL1 responseL2 responseL3)
+  acceptOrRefute <- locally @Leader (checkQuorum2 responseL1 responseL2 responseL3)
 
   -- recurse if no quorum of accept
   cond acceptOrRefute $ \case
@@ -93,6 +94,28 @@ checkQuorum x y z un = do
         if y >= 2
           then return False
           else retry
+
+checkQuorum2 ::
+  Async Bool @ l ->
+  Async Bool @ l ->
+  Async Bool @ l ->
+  Unwrap l ->
+  IO Bool
+checkQuorum2 x y z un = do
+  -- wait for the first two asyncs and see if there's a quorum
+  (async1, result1) <- waitAny [un x, un y, un z]
+  (async2, result2) <- waitAny $ filter (/= async1) [un x, un y, un z]
+  if result1 && result2
+    then
+      return True
+    else
+      if not result1 && not result2
+        then
+          return False
+        else do
+          -- wait for the third async to break the tie
+          (async3, result3) <- waitAny $ filter (\x -> x /= async1 && x /= async2) [un x, un y, un z]
+          return result3
 
 main :: IO ()
 main = do
