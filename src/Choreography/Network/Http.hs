@@ -122,10 +122,12 @@ runNetworkMain prog = interp handler (unNetwork prog)
     handler (Send a dst sid) = do
       liftIO $ logMsg ("Asynchronously send " ++ show a ++ " to " ++ dst ++ " with sequence number " ++ show sid)
       Ctx {cfg, self, mgr, buf} <- ask
-      liftIO $ async $ do
+      x <- liftIO $ async $ do
         let env = mkClientEnv mgr (locToUrl cfg ! dst)
         response <- runClientM (sendServant self sid (show a)) env
         either (logMsg . show) (void . return) response
+      tell [x]
+      return x
     handler (Recv src sid) = do
       liftIO $ logMsg ("Asynchronously wait for a message from " ++ src ++ " with sequence number " ++ show sid)
       Ctx {buf} <- ask
