@@ -1,5 +1,7 @@
 # HasChor
 
+![HasChor's logo](./haschor-logo.svg)
+
 HasChor is a library for *functional choreographic programming* in Haskell, introduced by our [ICFP 2023 paper](https://doi.org/10.1145/3607849).
 Choreographic programming is a programming paradigm where one writes a single program that describes the complete behavior of a distributed system and then compiles it to individual programs that run on each node.
 In this way, the generated programs are guaranteed to be *deadlock-free*.
