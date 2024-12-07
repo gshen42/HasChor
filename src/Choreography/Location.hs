@@ -7,6 +7,9 @@ import Data.Proxy
 import Data.String
 import GHC.TypeLits
 import Language.Haskell.TH
+import Control.Monad.Trans.Class
+import Control.Monad.Trans.Maybe
+import Control.Monad.IO.Class
 
 -- | Term-level locations.
 type LocTm = String
@@ -43,3 +46,12 @@ mkLoc loc = do
   let locName = mkName loc
   let p = mkName "Data.Proxy.Proxy"
   pure [SigD locName (AppT (ConT p) (LitT (StrTyLit loc))),ValD (VarP locName) (NormalB (ConE p)) []]
+
+----------------------------------------------------------------------
+-- Located computations
+
+newtype At l m a = At { runAt :: MaybeT m a }
+  deriving (Functor, Applicative, Monad, MonadTrans, MonadIO)
+
+-- unsafeUnwrap :: At l m a -> m a
+-- unsafeUnwrap x = . runMaybeT . unAt

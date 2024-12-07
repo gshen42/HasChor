@@ -9,7 +9,9 @@ import Choreography.Network
 import Control.Monad.Freer
 import Data.List
 import Data.Proxy
+import Data.Functor.Identity
 import GHC.TypeLits
+import Control.Monad.AppMon
 
 -- * The Choreo monad
 
@@ -115,3 +117,17 @@ cond' :: (Show a, Read a, KnownSymbol l)
 cond' (l, m) c = do
   x <- l `locally` m
   cond (l, x) c
+
+----------------------------------------------------------------------
+--
+
+data ChoreoTSig m a where
+  Comm' :: forall l l' m a.
+    At l m a -> ChoreoTSig m (At l' m a)
+  Cond' :: forall l m a b.
+    At l m a -> (a -> ChoreoTSig m b) -> ChoreoTSig m a
+
+newtype ChoreoT m a = ChoreoT { runChoreoT :: AppMon (ChoreoTSig m) a }
+  deriving (Functor, Applicative, Monad)
+
+type Choreo' = ChoreoT Identity
