@@ -12,7 +12,7 @@ import Data.Proxy (Proxy(..))
 import Data.HashMap.Strict (HashMap, (!))
 import Data.HashMap.Strict qualified as HashMap
 import Network.HTTP.Client (Manager, defaultManagerSettings, newManager)
-import Servant.API
+import Servant.API hiding (Host)
 import Servant.Client (ClientM, client, runClientM, BaseUrl(..), mkClientEnv, Scheme(..))
 import Servant.Server (Handler, Server, serve)
 import Control.Concurrent
