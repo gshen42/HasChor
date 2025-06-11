@@ -36,11 +36,11 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Set up GHC 9.2.8 and Cabal 3.6.2.0
-        uses: haskell/actions/setup@v2
+        uses: haskell-actions/setup@v2.8.0
         id: setup
         with:
-          ghc-version: '9.2.8'
-          cabal-version: '3.6.2.0'
+          ghc-version: '9.6.7'
+          cabal-version: '3.12.1.0'
           cabal-update: true
 
       - name: Configure the build
@@ -85,4 +85,4 @@ jobs:
 
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v2
+        uses: actions/deploy-pages@v4
