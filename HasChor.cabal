@@ -13,9 +13,7 @@ description:
     See the README.md for more information.
 
 tested-with:
-    GHC == 9.6.3
-    GHC == 9.4.7
-    GHC == 9.2.8
+    GHC == 9.6.7
 
 extra-doc-files:
     README.md
