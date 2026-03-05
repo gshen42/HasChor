@@ -40,12 +40,12 @@ library
         Control.Monad.Freer
         Control.Monad.Tree
     build-depends:
-        , base                 >= 4.16 && < 4.20
-        , bytestring           >= 0.11 && < 0.13
-        , http-client          >= 0.7  && < 0.8
-        , servant              >= 0.19 && < 0.21
-        , servant-client       >= 0.19 && < 0.21
-        , servant-server       >= 0.19 && < 0.21
-        , template-haskell     >= 2.18 && < 2.22
-        , unordered-containers >= 0.2  && < 0.3
-        , warp                 >= 3.3  && < 3.4
+        , base                 ^>= 4.18.3
+        , bytestring           ^>= 0.11.5.4
+        , http-client          ^>= 0.7.19
+        , servant              ^>= 0.20.2
+        , servant-client       ^>= 0.20.2
+        , servant-server       ^>= 0.20.2
+        , template-haskell     ^>= 2.20.0
+        , unordered-containers ^>= 0.2.20
+        , warp                 ^>= 3.3.31
