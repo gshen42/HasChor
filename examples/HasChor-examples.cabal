@@ -1,0 +1,4 @@
+cabal-version:      3.0
+name:               HasChor-examples
+version:            0.1.0.1
+synopsis:           Examples for HasChor
