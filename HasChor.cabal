@@ -38,6 +38,7 @@ library
         Choreography.Network.Http
         Choreography.Network.Local
         Control.Monad.Freer
+        Control.Monad.Tree
     build-depends:
         , base                 >= 4.16 && < 4.20
         , bytestring           >= 0.11 && < 0.13
