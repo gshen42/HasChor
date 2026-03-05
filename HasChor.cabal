@@ -29,6 +29,7 @@ source-repository this
 
 library
     hs-source-dirs:   src
+    ghc-options:      -Wall
     default-language: GHC2021
     exposed-modules:
         Choreography
@@ -40,12 +41,14 @@ library
         Control.Monad.Freer
         Control.Monad.Tree
     build-depends:
-        , base                 ^>= 4.18.3
-        , bytestring           ^>= 0.11.5.4
-        , http-client          ^>= 0.7.19
-        , servant              ^>= 0.20.2
-        , servant-client       ^>= 0.20.2
-        , servant-server       ^>= 0.20.2
-        , template-haskell     ^>= 2.20.0
-        , unordered-containers ^>= 0.2.20
-        , warp                 ^>= 3.3.31
+        base                 ^>= 4.18.3,
+        bytestring           ^>= 0.11.5.4,
+        http-client          ^>= 0.7.19,
+        servant              ^>= 0.20.2,
+        servant-client       ^>= 0.20.2,
+        servant-server       ^>= 0.20.2,
+        template-haskell     ^>= 2.20.0,
+        unordered-containers ^>= 0.2.20,
+        warp                 ^>= 3.3.31,
+        singletons           ^>= 3.0.4,
+        singletons-base      ^>= 3.2,
