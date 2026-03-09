@@ -7,6 +7,8 @@ module Choreography (
     (~>),
     (~~>),
     cond,
+    par,
   ) where
 
 import Choreography.Choreo
+import Control.Monad.Tree

@@ -13,8 +13,8 @@ instance Applicative (Tree f) where
   pure = Pure
   (<*>) = App
 
-(||) :: Tree f a -> Tree f b -> Tree f ()
-t1 || t2 = Pure (\_ _ -> ()) <*> t1 <*> t2
+par :: Tree f a -> Tree f b -> Tree f ()
+t1 `par` t2 = Pure (\_ _ -> ()) <*> t1 <*> t2
 
 instance Monad (Tree f) where
   (>>=) = Bind
