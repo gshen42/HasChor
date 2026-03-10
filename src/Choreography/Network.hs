@@ -1,59 +1,35 @@
--- | This module defines the `Network` monad, which represents programs run on
--- individual nodes in a distributed system with explicit sends and receives.
--- To run a `Network` program, we provide a `runNetwork` function that supports
--- multiple message transport backends.
 module Choreography.Network where
 
-import Choreography.Location
-import Control.Monad.Freer
-import Control.Monad.IO.Class
+import Control.Monad.Tree
+import Data.Binary
+import GHC.TypeLits.Singletons
 
--- * The Network monad
+type SessionId = ()
 
--- | Effect signature for the `Network` monad.
 data NetworkSig m a where
-  -- | Local computation.
-  Run :: m a
-      -> NetworkSig m a
-  -- | Sending.
-  Send :: Show a
-       => a
-       -> LocTm
-       -> NetworkSig m ()
-  -- | Receiving.
-  Recv :: Read a
-       => LocTm
-       -> NetworkSig m a
-  -- | Broadcasting.
-  BCast :: Show a
-        => a
-        -> NetworkSig m ()
+  Exec :: m a -> NetworkSig m a
+  Send :: Binary a => SessionId -> a -> SSymbol l -> NetworkSig m ()
+  Recv :: Binary a => SessionId -> SSymbol l-> NetworkSig m a
+  BCast :: Binary a => SessionId -> a -> NetworkSig m ()
 
--- | Monad that represents network programs.
-type Network m = Freer (NetworkSig m)
+type Network m = Tree (NetworkSig m)
 
--- * Network operations
+exec :: m a -> Network m a
+exec m = Perf (Exec m)
 
--- | Perform a local computation.
-run :: m a -> Network m a
-run m = toFreer $ Run m
+send :: Binary a => SessionId -> a -> SSymbol l -> Network m ()
+send sid a l = Perf (Send sid a l)
 
--- | Send a message to a receiver.
-send :: Show a => a -> LocTm -> Network m ()
-send a l = toFreer $ Send a l
+recv :: Binary a => SessionId -> SSymbol l -> Network m a
+recv sid l = Perf (Recv sid l)
 
--- | Receive a message from a sender.
-recv :: Read a => LocTm -> Network m a
-recv l = toFreer $ Recv l
-
--- | Broadcast a message to all participants.
-broadcast :: Show a => a -> Network m ()
-broadcast a = toFreer $ BCast a
+broadcast :: Binary a => SessionId -> a -> Network m ()
+broadcast sid a = Perf (BCast sid a)
 
 -- * Message transport backends
 
 -- | A message transport backend defines a /configuration/ of type @c@ that
 -- carries necessary bookkeeping information, then defines @c@ as an instance
 -- of `Backend` and provides a `runNetwork` function.
-class Backend c where
-  runNetwork :: MonadIO m => c -> LocTm -> Network m a -> m a
+-- class Backend c where
+--   runNetwork :: MonadIO m => c -> LocTm -> Network m a -> m a

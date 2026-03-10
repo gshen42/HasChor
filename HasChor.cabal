@@ -35,6 +35,7 @@ library
         Choreography
     other-modules:
         Choreography.Choreo
+        Choreography.Network
         Control.Monad.Tree
     build-depends:
         base                 ^>= 4.18.3,
