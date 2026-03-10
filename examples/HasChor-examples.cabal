@@ -2,3 +2,39 @@ cabal-version:      3.0
 name:               HasChor-examples
 version:            0.1.0.1
 synopsis:           Examples for HasChor
+
+tested-with:
+    GHC == 9.6.7
+
+executable concur-server
+    hs-source-dirs:   concur-server
+    main-is:          Main.hs
+    default-language: GHC2021
+    build-depends:
+        base                 ^>= 4.18.3,
+        singletons           ^>= 3.0.4,
+        singletons-base      ^>= 3.2,
+        HasChor
+
+executable microservices
+    hs-source-dirs:   microservices
+    main-is:          Main.hs
+    default-language: GHC2021
+    build-depends:
+        base                 ^>= 4.18.3,
+        binary               ^>= 0.8.9,
+        singletons           ^>= 3.0.4,
+        singletons-base      ^>= 3.2,
+        HasChor
+
+executable quorum-voting
+    hs-source-dirs:   quorum-voting
+    main-is:          Main.hs
+    default-language: GHC2021
+    build-depends:
+        base                 ^>= 4.18.3,
+        binary               ^>= 0.8.9,
+        singletons           ^>= 3.0.4,
+        singletons-base      ^>= 3.2,
+        stm                  ^>= 2.5.1,
+        HasChor
