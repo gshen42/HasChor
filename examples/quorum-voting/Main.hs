@@ -25,8 +25,9 @@ quorumVoting = do
   noVotes <- candidate `locally` (\_ -> newTVarIO 0)
   castVote voter1 yesVotes noVotes `par`
     castVote voter2 yesVotes noVotes `par`
-      castVote voter3 yesVotes noVotes
-  void $ countYesVotes yesVotes `par` countNoVotes noVotes
+      castVote voter3 yesVotes noVotes `par`
+        countYesVotes yesVotes `par`
+          countNoVotes noVotes
   where
     castVote :: (KnownSymbol l) => SSymbol l -> TVar Int @ "candidate" -> TVar Int @ "candidate" ->
       Choreo IO (() @ "candidate")

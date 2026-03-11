@@ -19,7 +19,7 @@ server :: SSymbol "server"
 server = SSymbol @"server"
 
 microServices :: Choreo IO ()
-microServices = runService keyService getText display `par` runService contentService getKey decrypt
+microServices = runService contentService getText display `par` runService keyService getKey decrypt
   where
     runService :: (KnownSymbol l, Binary a) => SSymbol l -> IO a -> (a -> IO b)-> Choreo IO ()
     runService service action handle = do
