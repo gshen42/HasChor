@@ -38,3 +38,15 @@ executable quorum-voting
         singletons-base      ^>= 3.2,
         stm                  ^>= 2.5.1,
         HasChor
+
+executable nshaped
+    hs-source-dirs:   nshape
+    main-is:          Main.hs
+    default-language: GHC2021
+    build-depends:
+        base                 ^>= 4.18.3,
+        binary               ^>= 0.8.9,
+        singletons           ^>= 3.0.4,
+        singletons-base      ^>= 3.2,
+        stm                  ^>= 2.5.1,
+        HasChor
