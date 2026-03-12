@@ -4,7 +4,27 @@ import Control.Monad.Tree
 import Data.Binary
 import GHC.TypeLits.Singletons
 
-type SessionId = ()
+-- We use `SessionId` to assign unique identifiers to two branches of a `App`.
+-- The assignment algorithm works as the follows:
+-- * The top-most choreography starts with id `Root`.
+-- * Everytime we see a `App`, we assign the first branch of it id `Nest (Left ()) sid`, where `sid`
+--   is the id of the current choreography. For the second branch, we use `Right ()` instead.
+-- Two session ids are equal if they're structurally equal.
+--
+-- We could serialize a session id to a list of integers:
+-- * `Root` is the empty list []
+-- * Each `Nest` appends `[0]` (the left branch) or `[1]` (the right branch) to the current list.
+-- For example, `Nest (Left ()) Root` corresponds to [0]; `Nest (Right ()) (Nest (Left ()) Root)`
+-- corresponds to `[0, 1]`
+data SessionId where
+  Root :: SessionId
+  Nest :: Either () () -> SessionId -> SessionId
+
+instance Eq SessionId where
+  Root == Root = True
+  (Nest (Left ()) sid) == (Nest (Right ()) sid') = sid == sid'
+  (Nest (Right ()) sid) == (Nest (Right ()) sid') = sid == sid'
+  _ == _ = False
 
 data NetworkSig m a where
   Exec :: m a -> NetworkSig m a
