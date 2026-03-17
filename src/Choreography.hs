@@ -10,5 +10,6 @@ module Choreography (
     par,
   ) where
 
+import Choreography.Location
 import Choreography.Choreo
 import Control.Monad.Tree

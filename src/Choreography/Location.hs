@@ -31,9 +31,9 @@ wrap = Wrap
 -- | Unwrap a located value.
 --
 -- /Note:/ Unwrapping a empty located value will throw an exception.
-unwrapUnsafe :: a @ l-> a
-unwrapUnsafe (Wrap a) = a
-unwrapUnsafe Empty    = error "HasChor Internal Error: unwrapping an empty located value."
+unwrap :: a @ l-> a
+unwrap (Wrap a) = a
+unwrap Empty    = error "HasChor Internal Error: unwrapping an empty located value."
 
 -- | Define a location at both type and term levels.
 mkLoc :: String -> Q [Dec]

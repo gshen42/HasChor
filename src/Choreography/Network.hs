@@ -1,8 +1,8 @@
 module Choreography.Network where
 
+import Choreography.Location
 import Control.Monad.Tree
 import Data.Binary
-import GHC.TypeLits.Singletons
 
 -- We use `SessionId` to assign unique identifiers to two branches of a `App`.
 -- The assignment algorithm works as the follows:
@@ -28,8 +28,8 @@ instance Eq SessionId where
 
 data NetworkSig m a where
   Exec :: m a -> NetworkSig m a
-  Send :: Binary a => SessionId -> a -> SSymbol l -> NetworkSig m ()
-  Recv :: Binary a => SessionId -> SSymbol l-> NetworkSig m a
+  Send :: Binary a => SessionId -> a -> LocTm -> NetworkSig m ()
+  Recv :: Binary a => SessionId -> LocTm-> NetworkSig m a
   BCast :: Binary a => SessionId -> a -> NetworkSig m ()
 
 type Network m = Tree (NetworkSig m)
@@ -37,10 +37,10 @@ type Network m = Tree (NetworkSig m)
 exec :: m a -> Network m a
 exec m = Perf (Exec m)
 
-send :: Binary a => SessionId -> a -> SSymbol l -> Network m ()
+send :: Binary a => SessionId -> a -> LocTm -> Network m ()
 send sid a l = Perf (Send sid a l)
 
-recv :: Binary a => SessionId -> SSymbol l -> Network m a
+recv :: Binary a => SessionId -> LocTm -> Network m a
 recv sid l = Perf (Recv sid l)
 
 broadcast :: Binary a => SessionId -> a -> Network m ()
