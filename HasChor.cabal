@@ -34,10 +34,10 @@ library
     exposed-modules:
         Choreography
     other-modules:
-        Choreography.Choreo
-        Choreography.Network
-        Choreography.Location
         Control.Monad.Tree
+        Choreography.Location
+        Choreography.Network
+        Choreography.Choreo
     build-depends:
         base                 ^>= 4.18.3,
         binary               ^>= 0.8.9,
