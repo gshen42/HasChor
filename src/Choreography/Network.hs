@@ -1,8 +1,8 @@
 module Choreography.Network where
 
+import Control.Monad.IO.Class
 import Choreography.Location
 import Control.Monad.Tree
-import Data.Binary
 
 -- We use `SessionId` to assign unique identifiers to two branches of a `App`.
 -- The assignment algorithm works as the follows:
@@ -28,22 +28,22 @@ instance Eq SessionId where
 
 data NetworkSig m a where
   Exec :: m a -> NetworkSig m a
-  Send :: Binary a => SessionId -> a -> LocTm -> NetworkSig m ()
-  Recv :: Binary a => SessionId -> LocTm-> NetworkSig m a
-  BCast :: Binary a => SessionId -> a -> NetworkSig m ()
+  Send :: Show a => SessionId -> a -> LocTm -> NetworkSig m ()
+  Recv :: Read a => SessionId -> LocTm-> NetworkSig m a
+  BCast :: Show a => SessionId -> a -> NetworkSig m ()
 
 type Network m = Tree (NetworkSig m)
 
 exec :: m a -> Network m a
 exec m = Perf (Exec m)
 
-send :: Binary a => SessionId -> a -> LocTm -> Network m ()
+send :: Show a => SessionId -> a -> LocTm -> Network m ()
 send sid a l = Perf (Send sid a l)
 
-recv :: Binary a => SessionId -> LocTm -> Network m a
+recv :: Read a => SessionId -> LocTm -> Network m a
 recv sid l = Perf (Recv sid l)
 
-broadcast :: Binary a => SessionId -> a -> Network m ()
+broadcast :: Show a => SessionId -> a -> Network m ()
 broadcast sid a = Perf (BCast sid a)
 
 -- * Message transport backends
@@ -51,5 +51,5 @@ broadcast sid a = Perf (BCast sid a)
 -- | A message transport backend defines a /configuration/ of type @c@ that
 -- carries necessary bookkeeping information, then defines @c@ as an instance
 -- of `Backend` and provides a `runNetwork` function.
--- class Backend c where
---   runNetwork :: MonadIO m => c -> LocTm -> Network m a -> m a
+class Backend c where
+  runNetwork :: MonadIO m => c -> LocTm -> Network m a -> m a

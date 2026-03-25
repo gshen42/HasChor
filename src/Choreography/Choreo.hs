@@ -9,7 +9,6 @@ import Choreography.Location
 import Choreography.Network
 import Control.Monad.Reader
 import Control.Monad.Tree
-import Data.Binary
 import Data.Proxy
 import GHC.TypeLits
 
@@ -20,9 +19,9 @@ type Unwrap l = forall a. a @ l -> a
 -- | Effect signature for the `Choreo` monad. @m@ is a monad that represents local computations.
 data ChoreoSig m a where
   Locally :: (KnownSymbol l) => Proxy l -> (Unwrap l -> m a) -> ChoreoSig m (a @ l)
-  Comm :: (Binary a, KnownSymbol l, KnownSymbol l') =>
+  Comm :: (Show a, Read a, KnownSymbol l, KnownSymbol l') =>
     Proxy l -> a @ l -> Proxy l' -> ChoreoSig m (a @ l')
-  Cond :: (Binary a, KnownSymbol l) => Proxy l -> a @ l -> (a -> Choreo m b) -> ChoreoSig m b
+  Cond :: (Show a, Read a, KnownSymbol l) => Proxy l -> a @ l -> (a -> Choreo m b) -> ChoreoSig m b
 
 -- | Monad for choreographies.
 type Choreo m a = Tree (ChoreoSig m) a
@@ -32,19 +31,19 @@ locally :: (KnownSymbol l) => Proxy l -> (Unwrap l -> m a) -> Choreo m (a @ l)
 locally l a = Perf (Locally l a)
 
 -- | Communication between a sender and a receiver.
-(~>) :: (Binary a, KnownSymbol l, KnownSymbol l') => a @ l -> Proxy l' -> Choreo m (a @ l')
+(~>) :: (Show a, Read a, KnownSymbol l, KnownSymbol l') => a @ l -> Proxy l' -> Choreo m (a @ l')
 a ~> l' = Perf (Comm (Proxy :: Proxy l) a l')
 
 -- TODO: figure out why `Unwrap l -> m a` requires `ImpredicativeTypes` and is this safe
 -- | A variant of `~>` that sends the result of a local computation.
-(~~>) :: (Binary a, KnownSymbol l, KnownSymbol l') =>
+(~~>) :: (Show a, Read a, KnownSymbol l, KnownSymbol l') =>
   (Proxy l, Unwrap l -> m a) -> Proxy l' -> Choreo m (a @ l')
 (l, a) ~~> l' = do
   x <- l `locally` a
   x ~> l'
 
 -- | Conditionally execute choreographies based on a located value.
-cond :: (Binary a, KnownSymbol l) => a @ l -> (a -> Choreo m b) -> Choreo m b
+cond :: (Show a, Read a, KnownSymbol l) => a @ l -> (a -> Choreo m b) -> Choreo m b
 cond a f = Perf (Cond (Proxy :: Proxy l) a f)
 
 -- TODO: will come back to this later
