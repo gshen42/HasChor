@@ -47,20 +47,7 @@ a ~> l' = Perf (Comm (Proxy :: Proxy l) a l')
 cond :: (Binary a, KnownSymbol l) => a @ l -> (a -> Choreo m b) -> Choreo m b
 cond a f = Perf (Cond (Proxy :: Proxy l) a f)
 
--- Since endpoint projection generates fresh session ids along the way, it needs to keep track of
--- the current id, making epp itself effectful. Here, the effect we want is reading a value from an
--- environment, and we use the reader monad transformer on top of the network monad to achieve that.
-newtype Epp m a = Epp { unEpp :: ReaderT SessionId (Network m) a }
-  deriving (Functor, Monad, MonadReader SessionId)
-
-instance Applicative (Epp m) where
-  pure = Epp . pure
-  f <*> a = Epp $ local (Nest (Left ())) (unEpp f) <*> local (Nest (Right ())) (unEpp a)
-
--- TODO: why this can't be automatically derived?
-instance MonadTrans Epp where
-  lift = Epp . lift . exec
-
+-- TODO: will come back to this later
 -- | Run a `Choreo` monad directly.
 -- runChoreo :: Monad m => Choreo m a -> m a
 -- runChoreo = interpFreer handler
@@ -70,6 +57,31 @@ instance MonadTrans Epp where
 --     handler (Comm _ a _) = return $ (wrap . unwrap) a
 --     handler (Cond _ a c) = runChoreo $ c (unwrap a)
 
+-- Since endpoint projection generates fresh session ids along the way, it needs to keep track of
+-- the current id, making epp itself effectful. Here, the effect we want is reading a value from an
+-- environment, and we use the reader monad transformer on top of the network monad to achieve that.
+newtype Epp m a = Epp { unEpp :: ReaderT SessionId (Network m) a }
+  deriving (Functor, Monad, MonadReader SessionId)
+
+instance Applicative (Epp m) where
+  pure = Epp . pure
+  -- Question: Should `<*>` call `forkIO` or some other concurrency primitives?
+  -- My take: No, for two reasons:
+  -- 1. From a design perspective, we want to treat `epp` as a text-to-text compilation process.
+  -- This follows the "do one thing and do it better" principle and keeps our design simple.
+  -- How concurrent choreographies actually run is an implementation/backend detail.
+  -- 2. From an implementation perspective, `forkIO` requires to be called in the `IO` monad.
+  -- It's not obvious how to do it here --- it would require the local monad `m` to be `IO` or other
+  -- `IO`-based monads, and then require `Network` to be able to run a local computation that's
+  -- itself an network program, which seems like a cicular-dependencies.
+  f <*> a = Epp $ local (Nest (Left ())) (unEpp f) <*> local (Nest (Right ())) (unEpp a)
+
+-- TODO: why this can't be automatically derived?
+instance MonadTrans Epp where
+  lift = Epp . lift . exec
+
+-- Yao: Since `epp` maps uninterpreted syntax to another uninterpreted syntax, this feels more like
+-- a translation than an interpretation.
 -- | Endpoint projection.
 epp :: Choreo m a -> LocTm -> Epp m a
 epp c l' = interp handler c
