@@ -1,23 +1,20 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Main where
 
 import Choreography
-import GHC.TypeLits.Singletons
+import Data.Proxy
+import GHC.TypeLits
 
-client1 :: SSymbol "client1"
-client1 = SSymbol @"client1"
-
-client2 :: SSymbol "client2"
-client2 = SSymbol @"client2"
-
-server :: SSymbol "server"
-server = SSymbol @"server"
+$(mkLoc "client1")
+$(mkLoc "client2")
+$(mkLoc "server")
 
 concurServer :: Choreo IO ()
 concurServer = session client1 `par` session client2
   where
-    session :: (KnownSymbol l) => SSymbol l -> Choreo IO ()
+    session :: (KnownSymbol l) => Proxy l -> Choreo IO ()
     session client = do
       x <- (client, \_ -> getLine) ~~> server
       y <- (server, \un -> return (un x ++ " from the server")) ~~> client

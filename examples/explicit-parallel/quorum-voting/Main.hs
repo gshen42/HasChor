@@ -1,23 +1,18 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Main where
 
 import Choreography
-import GHC.TypeLits.Singletons
 import Control.Concurrent.STM
 import Control.Monad
+import Data.Proxy
+import GHC.TypeLits
 
-voter1 :: SSymbol "voter1"
-voter1 = SSymbol @"voter1"
-
-voter2 :: SSymbol "voter2"
-voter2 = SSymbol @"voter2"
-
-voter3 :: SSymbol "voter3"
-voter3 = SSymbol @"voter3"
-
-candidate :: SSymbol "candidate"
-candidate = SSymbol @"candidate"
+$(mkLoc "voter1")
+$(mkLoc "voter2")
+$(mkLoc "voter3")
+$(mkLoc "candidate")
 
 quorumVoting :: Choreo IO ()
 quorumVoting = do
@@ -29,7 +24,7 @@ quorumVoting = do
         countYesVotes yesVotes `par`
           countNoVotes noVotes
   where
-    castVote :: (KnownSymbol l) => SSymbol l -> TVar Int @ "candidate" -> TVar Int @ "candidate" ->
+    castVote :: (KnownSymbol l) => Proxy l -> TVar Int @ "candidate" -> TVar Int @ "candidate" ->
       Choreo IO (() @ "candidate")
     castVote voter yesVotes noVotes = do
       vote <- (voter, \_ -> getVote) ~~> candidate

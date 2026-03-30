@@ -1,12 +1,13 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Main where
 
 import Choreography
 import Control.Concurrent.STM
 import Control.Concurrent.STM.TMVar
-import Data.Binary
-import GHC.TypeLits.Singletons
+import Data.Proxy
+import GHC.TypeLits
 
 --    f1  g1
 --    |  /|
@@ -14,13 +15,10 @@ import GHC.TypeLits.Singletons
 --    |/  |
 --    f2  g2
 
-data A
-data B
-instance Binary B where
-  put = undefined
-  get = undefined
-data C
-data D
+data A deriving (Show, Read)
+data B deriving (Show, Read)
+data C deriving (Show, Read)
+data D deriving (Show, Read)
 
 f1 :: IO A
 f1 = undefined
@@ -34,11 +32,8 @@ f2 = undefined
 g2 ::B -> IO D
 g2 = undefined
 
-alice :: SSymbol "alice"
-alice = SSymbol @"alice"
-
-bob :: SSymbol "bob"
-bob = SSymbol @"bob"
+$(mkLoc "alice")
+$(mkLoc "bob")
 
 foo :: Choreo IO (C @ "alice", D @ "bob")
 foo = do

@@ -7,46 +7,35 @@ tested-with:
     GHC == 9.6.7
 
 executable concur-server
-    hs-source-dirs:   concur-server
+    hs-source-dirs:   explicit-parallel/concur-server
     main-is:          Main.hs
     default-language: GHC2021
     build-depends:
         base                 ^>= 4.18.3,
-        singletons           ^>= 3.0.4,
-        singletons-base      ^>= 3.2,
         HasChor
 
 executable microservices
-    hs-source-dirs:   microservices
+    hs-source-dirs:   explicit-parallel/microservices
     main-is:          Main.hs
     default-language: GHC2021
     build-depends:
         base                 ^>= 4.18.3,
-        binary               ^>= 0.8.9,
-        singletons           ^>= 3.0.4,
-        singletons-base      ^>= 3.2,
         HasChor
 
 executable quorum-voting
-    hs-source-dirs:   quorum-voting
+    hs-source-dirs:   explicit-parallel/quorum-voting
     main-is:          Main.hs
     default-language: GHC2021
     build-depends:
         base                 ^>= 4.18.3,
-        binary               ^>= 0.8.9,
-        singletons           ^>= 3.0.4,
-        singletons-base      ^>= 3.2,
         stm                  ^>= 2.5.1,
         HasChor
 
 executable nshaped
-    hs-source-dirs:   nshape
+    hs-source-dirs:   explicit-parallel/nshaped
     main-is:          Main.hs
     default-language: GHC2021
     build-depends:
         base                 ^>= 4.18.3,
-        binary               ^>= 0.8.9,
-        singletons           ^>= 3.0.4,
-        singletons-base      ^>= 3.2,
         stm                  ^>= 2.5.1,
         HasChor

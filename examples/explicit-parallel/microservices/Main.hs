@@ -1,27 +1,21 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Main where
 
-import Data.Binary
 import Choreography
-import GHC.TypeLits.Singletons
+import Data.Proxy
+import GHC.TypeLits
 
-keyService :: SSymbol "keyService"
-keyService = SSymbol @"keyService"
-
-contentService :: SSymbol "contentService"
-contentService = SSymbol @"contentService"
-
-client :: SSymbol "client"
-client = SSymbol @"client"
-
-server :: SSymbol "server"
-server = SSymbol @"server"
+$(mkLoc "keyService")
+$(mkLoc "contentService")
+$(mkLoc "client")
+$(mkLoc "server")
 
 microServices :: Choreo IO ()
 microServices = runService contentService getText display `par` runService keyService getKey decrypt
   where
-    runService :: (KnownSymbol l, Binary a) => SSymbol l -> IO a -> (a -> IO b)-> Choreo IO ()
+    runService :: (KnownSymbol l, Show a, Read a) => Proxy l -> IO a -> (a -> IO b)-> Choreo IO ()
     runService service action handle = do
       x <- (service, \_ ->  action) ~~> server
       y <- x ~> client
