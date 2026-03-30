@@ -22,7 +22,7 @@ data SessionId where
 
 instance Eq SessionId where
   Root == Root = True
-  (Nest (Left ()) sid) == (Nest (Right ()) sid') = sid == sid'
+  (Nest (Left ()) sid) == (Nest (Left ()) sid') = sid == sid'
   (Nest (Right ()) sid) == (Nest (Right ()) sid') = sid == sid'
   _ == _ = False
 
@@ -52,4 +52,4 @@ broadcast sid a = Perf (BCast sid a)
 -- carries necessary bookkeeping information, then defines @c@ as an instance
 -- of `Backend` and provides a `runNetwork` function.
 class Backend c where
-  runNetwork :: MonadIO m => c -> LocTm -> Network m a -> m a
+  runNetwork :: c -> LocTm -> Network IO a -> IO a

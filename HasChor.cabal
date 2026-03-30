@@ -29,25 +29,29 @@ source-repository this
 
 library
     hs-source-dirs:   src
-    ghc-options:      -Wall
     default-language: GHC2021
     exposed-modules:
         Choreography
     other-modules:
+        Control.Monad.Freer
         Control.Monad.Tree
         Choreography.Location
         Choreography.Network
+        Choreography.Network.Http
         Choreography.Choreo
     build-depends:
+        async                ^>= 2.2.5,
         base                 ^>= 4.18.3,
         binary               ^>= 0.8.9,
         bytestring           ^>= 0.11.5.4,
+        hashable             ^>= 1.5.1.0,
         http-client          ^>= 0.7.19,
         mtl                  ^>= 2.3.1,
         servant              ^>= 0.20.2,
         servant-client       ^>= 0.20.2,
         servant-server       ^>= 0.20.2,
         template-haskell     ^>= 2.20.0,
+        text                 ^>= 2.0.2,
         transformers         ^>= 0.6.1.0,
         unordered-containers ^>= 0.2.20,
         warp                 ^>= 3.3.31,

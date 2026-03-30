@@ -8,23 +8,49 @@ module Choreography.Network.Http where
 import Choreography.Location
 import Choreography.Network hiding (run)
 import Data.ByteString (fromStrict)
+import Data.Hashable (Hashable(..))
 import Data.Proxy (Proxy(..))
 import Data.HashMap.Strict (HashMap, (!))
 import Data.HashMap.Strict qualified as HashMap
+import Data.Text (Text)
+import Data.Text qualified as Text
 import Network.HTTP.Client (Manager, defaultManagerSettings, newManager)
 import Servant.API hiding (Host)
 import Servant.Client (ClientM, client, runClientM, BaseUrl(..), mkClientEnv, Scheme(..))
 import Servant.Server (Handler, Server, serve)
 import Control.Concurrent
+import Control.Concurrent.Async
 import Control.Concurrent.Chan
 import Control.Monad
-import Control.Monad.Freer
+import Control.Monad.Tree
 import Control.Monad.IO.Class
 import Network.Wai.Handler.Warp (run)
 
 -- * Servant API
 
-type API = "send" :> Capture "from" LocTm :> ReqBody '[PlainText] String :> PostNoContent
+type API = "send"
+ :> Capture "from" LocTm
+ :> Capture "session" SessionId
+ :> ReqBody '[PlainText] String :> PostNoContent
+
+instance ToHttpApiData SessionId where
+  toUrlPiece = Text.pack . go
+    where
+      go :: SessionId -> String
+      go Root = "root"
+      go (Nest (Left ()) sid) = go sid ++ "0"
+      go (Nest (Right ()) sid) = go sid ++ "1"
+
+instance FromHttpApiData SessionId where
+  parseUrlPiece t =
+    case Text.unpack t of
+      'r' : 'o' : 'o' : 't' : rest -> foldM step Root rest
+      _ -> Left (Text.pack "Invalid SessionId: expected prefix 'root'")
+    where
+      step :: SessionId -> Char -> Either Text SessionId
+      step sid '0' = Right (Nest (Left ()) sid)
+      step sid '1' = Right (Nest (Right ()) sid)
+      step _ c = Left (Text.pack ("Invalid SessionId branch: " ++ [c]))
 
 -- * Http configuration
 
@@ -55,54 +81,80 @@ locs = HashMap.keys . locToUrl
 
 -- * Receiving channels
 
-type RecvChans = HashMap LocTm (Chan String)
+instance Hashable SessionId where
+  hashWithSalt salt Root = hashWithSalt salt (0 :: Int)
+  hashWithSalt salt (Nest (Left ()) sid) = hashWithSalt (hashWithSalt salt (1 :: Int)) sid
+  hashWithSalt salt (Nest (Right ()) sid) = hashWithSalt (hashWithSalt salt (2 :: Int)) sid
+
+type RecvChans = MVar (HashMap (LocTm, SessionId) (Chan String))
 
 mkRecvChans :: HttpConfig -> IO RecvChans
-mkRecvChans cfg = foldM f HashMap.empty (locs cfg)
-  where
-    f :: HashMap LocTm (Chan String) -> LocTm
-      -> IO (HashMap LocTm (Chan String))
-    f hm l = do
-      c <- newChan
-      return $ HashMap.insert l c hm
+mkRecvChans _ = newMVar HashMap.empty
+
+lookupRecvChan :: RecvChans -> LocTm -> SessionId -> IO (Chan String)
+lookupRecvChan chans loc sid =
+  modifyMVar chans $ \hm ->
+    case HashMap.lookup (loc, sid) hm of
+      Just chan -> pure (hm, chan)
+      Nothing -> do
+        chan <- newChan
+        let hm' = HashMap.insert (loc, sid) chan hm
+        pure (hm', chan)
 
 -- * HTTP backend
 
-runNetworkHttp :: MonadIO m => HttpConfig -> LocTm -> Network m a -> m a
+-- IO monad but the `Applicative` instance runs computations concurrently
+newtype ConIO a = ConIO { unConIO :: IO a }
+
+deriving instance Functor ConIO
+deriving instance Monad ConIO
+deriving instance MonadIO ConIO
+
+instance Applicative ConIO where
+  f <*> a = ConIO $ do
+    (f', a') <- concurrently (unConIO f) (unConIO a)
+    return (f' a')
+
+  pure = ConIO . pure
+
+runNetworkHttp :: HttpConfig -> LocTm -> Network IO a -> IO a
 runNetworkHttp cfg self prog = do
   mgr <- liftIO $ newManager defaultManagerSettings
   chans <- liftIO $ mkRecvChans cfg
   recvT <- liftIO $ forkIO (recvThread cfg chans)
-  result <- runNetworkMain mgr chans prog
+  result <- unConIO $ runNetworkMain mgr chans prog
   liftIO $ threadDelay 1000000 -- wait until all outstanding requests to be completed
   liftIO $ killThread recvT
   return result
   where
-    runNetworkMain :: MonadIO m => Manager -> RecvChans -> Network m a -> m a
-    runNetworkMain mgr chans = interpFreer handler
+    runNetworkMain :: Manager -> RecvChans -> Network IO a -> ConIO a
+    runNetworkMain mgr chans = interp handler
       where
-        handler :: MonadIO m => NetworkSig m a -> m a
-        handler (Run m)    = m
-        handler(Send a l) = liftIO $ do
-          res <- runClientM (send self $ show a) (mkClientEnv mgr (locToUrl cfg ! l))
+        handler :: NetworkSig IO a -> ConIO a
+        handler (Exec m) = liftIO m
+        handler (Send sid a l) = liftIO $ do
+          res <- runClientM (send self sid $ show a) (mkClientEnv mgr (locToUrl cfg ! l))
           case res of
             Left err -> putStrLn $ "Error : " ++ show err
             Right _  -> return ()
-        handler (Recv l)   = liftIO $ read <$> readChan (chans ! l)
-        handler (BCast a)  = mapM_ handler $ fmap (Send a) (locs cfg)
+        handler (Recv sid l) = liftIO $ do
+          chan <- lookupRecvChan chans l sid
+          read <$> readChan chan
+        handler (BCast sid a) = mapM_ handler $ fmap (Send sid a) (locs cfg)
 
     api :: Proxy API
     api = Proxy
 
-    send :: LocTm -> String -> ClientM NoContent
+    send :: LocTm -> SessionId -> String -> ClientM NoContent
     send = client api
 
     server :: RecvChans -> Server API
     server chans = handler
       where
-        handler :: LocTm -> String -> Handler NoContent
-        handler rmt msg = do
-          liftIO $ writeChan (chans ! rmt) msg
+        handler :: LocTm -> SessionId -> String -> Handler NoContent
+        handler rmt sid msg = do
+          chan <- liftIO $ lookupRecvChan chans rmt sid
+          liftIO $ writeChan chan msg
           return NoContent
 
     recvThread :: HttpConfig -> RecvChans -> IO ()
