@@ -8,6 +8,7 @@ import Control.Concurrent.STM
 import Control.Monad
 import Data.Proxy
 import GHC.TypeLits
+import System.Environment
 
 $(mkLoc "voter1")
 $(mkLoc "voter2")
@@ -50,4 +51,14 @@ quorumVoting = do
         putStrLn "I'm not selected"
 
 main :: IO ()
-main = putStrLn "hello, world"
+main = do
+  [loc] <- getArgs
+  runChoreography cfg quorumVoting loc
+  return ()
+  where
+    cfg = mkHttpConfig
+      [ ("voter1", ("localhost", 4242))
+      , ("voter2", ("localhost", 4343))
+      , ("voter3", ("localhost", 4444))
+      , ("candidate", ("localhost", 4545))
+      ]

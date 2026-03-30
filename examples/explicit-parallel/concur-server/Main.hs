@@ -6,6 +6,7 @@ module Main where
 import Choreography
 import Data.Proxy
 import GHC.TypeLits
+import System.Environment
 
 $(mkLoc "client1")
 $(mkLoc "client2")
@@ -22,4 +23,13 @@ concurServer = session client1 `par` session client2
       return ()
 
 main :: IO ()
-main = putStrLn "hello, world"
+main = do
+  [loc] <- getArgs
+  runChoreography cfg concurServer loc
+  return ()
+  where
+    cfg = mkHttpConfig
+      [ ("client1", ("localhost", 4242))
+      , ("client2", ("localhost", 4343))
+      , ("server", ("localhost", 4444))
+      ]

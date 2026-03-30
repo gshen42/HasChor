@@ -6,6 +6,7 @@ module Main where
 import Choreography
 import Data.Proxy
 import GHC.TypeLits
+import System.Environment
 
 $(mkLoc "keyService")
 $(mkLoc "contentService")
@@ -35,4 +36,14 @@ microServices = runService contentService getText display `par` runService keySe
     decrypt k = putStrLn ("Key: " ++ k)
 
 main :: IO ()
-main = putStrLn "hello, world"
+main = do
+  [loc] <- getArgs
+  runChoreography cfg microServices loc
+  return ()
+  where
+    cfg = mkHttpConfig
+      [ ("keyService", ("localhost", 4242))
+      , ("contentService", ("localhost", 4343))
+      , ("client", ("localhost", 4444))
+      , ("server", ("localhost", 4545))
+      ]
