@@ -39,3 +39,11 @@ executable nshaped
         base                 ^>= 4.18.3,
         stm                  ^>= 2.5.1,
         HasChor
+
+executable too-much-ooo
+    hs-source-dirs:   explicit-parallel/too-much-ooo
+    main-is:          Main.hs
+    default-language: GHC2021
+    build-depends:
+        base                 ^>= 4.18.3,
+        HasChor

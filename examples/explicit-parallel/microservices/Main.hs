@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE ApplicativeDo #-}
 
 module Main where
 
@@ -14,7 +15,10 @@ $(mkLoc "client")
 $(mkLoc "server")
 
 microServices :: Choreo IO ()
-microServices = runService contentService getText display `par` runService keyService getKey decrypt
+microServices = do
+  runService contentService getText display
+  runService keyService getKey decrypt
+  return ()
   where
     runService :: (KnownSymbol l, Show a, Read a) => Proxy l -> IO a -> (a -> IO b)-> Choreo IO ()
     runService service action handle = do
