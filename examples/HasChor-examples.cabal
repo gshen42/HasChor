@@ -39,3 +39,48 @@ executable nshaped
         base                 ^>= 4.18.3,
         stm                  ^>= 2.5.1,
         HasChor
+
+executable display-decrypt
+    hs-source-dirs:   explicit-parallel/display-decrypt
+    main-is:          Main.hs
+    default-language: GHC2021
+    build-depends:
+        base                 ^>= 4.18.3,
+        HasChor
+
+executable twice-X
+    hs-source-dirs:   explicit-parallel/twice-X
+    main-is:          Main.hs
+    default-language: GHC2021
+    build-depends:
+        base                 ^>= 4.18.3,
+        HasChor
+
+executable buy-items
+    hs-source-dirs:   explicit-parallel/buy-items
+    main-is:          Main.hs
+    default-language: GHC2021
+    build-depends:
+        base                 ^>= 4.18.3,
+        unordered-containers ^>= 0.2.20,
+        transformers         ^>= 0.6.1.0,
+        HasChor
+
+executable shared-stream
+    hs-source-dirs:   explicit-parallel/shared-stream
+    main-is:          Main.hs
+    default-language: GHC2021
+    build-depends:
+        base                 ^>= 4.18.3,
+        HasChor
+
+executable image-classification
+    hs-source-dirs:   explicit-parallel/image-classification
+    main-is:          Main.hs
+    default-language: GHC2021
+    build-depends:
+        base                 ^>= 4.18.3,
+        stm                  ^>= 2.5.1,
+        unordered-containers ^>= 0.2.20,
+        HasChor
+
