@@ -7,6 +7,7 @@ module Choreography2 (
   -- LocTm,
   -- LocTy,
   -- type (@),
+  At,
   mkLoc,
 
   -- * The Choreo monad

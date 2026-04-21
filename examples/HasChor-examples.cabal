@@ -84,3 +84,11 @@ executable image-classification
         unordered-containers ^>= 0.2.20,
         HasChor
 
+executable quorum-voting-choreo2
+    hs-source-dirs:   explicit-parallel/quorum-voting-choreo2
+    main-is:          Main.hs
+    default-language: GHC2021
+    build-depends:
+        base                 ^>= 4.18.3,
+        stm                  ^>= 2.5.1,
+        HasChor
