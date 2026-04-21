@@ -32,6 +32,7 @@ library
     default-language: GHC2021
     exposed-modules:
         Choreography
+        Choreography2
     other-modules:
         Control.Monad.Freer
         Control.Monad.Tree
@@ -39,6 +40,7 @@ library
         Choreography.Network
         Choreography.Network.Http
         Choreography.Choreo
+        Choreography.Choreo2
     build-depends:
         async                ^>= 2.2.5,
         base                 ^>= 4.18.3,
@@ -47,6 +49,8 @@ library
         hashable             ^>= 1.5.1.0,
         http-client          ^>= 0.7.19,
         mtl                  ^>= 2.3.1,
+        singletons           ^>= 3.0.4,
+        singletons-base      ^>= 3.2,
         servant              ^>= 0.20.2,
         servant-client       ^>= 0.20.2,
         servant-server       ^>= 0.20.2,
