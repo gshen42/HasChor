@@ -99,7 +99,9 @@ epp c l' = interp handler c
         lift (wrap <$> recv sid (toLocTm s))
       | otherwise = return Empty
     handler (Cond l a k)
-      | toLocTm l == l' =
-        Epp (do sid <- ask; lift $ broadcast sid (unwrap a)) >> epp (k (unwrap a)) l'
-      | otherwise =
-        Epp (do sid <- ask; lift $ recv sid (toLocTm l)) >>= \x -> epp (k x) l'
+      | toLocTm l == l' = do
+        Epp (do sid <- ask; lift $ broadcast sid (unwrap a))
+        epp (k (unwrap a)) l'
+      | otherwise = do
+        x <- Epp (do sid <- ask; lift $ recv sid (toLocTm l))
+        epp (k x) l'
