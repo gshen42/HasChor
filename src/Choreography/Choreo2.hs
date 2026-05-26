@@ -96,10 +96,12 @@ epp c l' = interp handler c
           return (\_ -> a)
         (Disproved dpf1, Disproved dpf2) -> return (\pf -> absurd (dpf2 pf))
     handler (Cond l a k) = case l %~ l' of
-      (Proved pf) -> let a' = a pf in
-        Epp (do sid <- ask; lift $ broadcast sid a') >> epp (k a') l'
-      (Disproved dpf) ->
-        Epp (do sid <- ask; lift $ recv sid (toLocTm l)) >>= \x -> epp (k x) l'
+      (Proved pf) -> let a' = a pf in do
+        Epp (do sid <- ask; lift $ broadcast sid a')
+        epp (k a') l'
+      (Disproved dpf) -> do
+        x <- Epp (do sid <- ask; lift $ recv sid (toLocTm l))
+        epp (k x) l'
 
 toLocTm :: (KnownSymbol l) => SSymbol l -> String
 toLocTm = symbolVal
