@@ -1,4 +1,12 @@
-# HasChor
+# Parkour
+
+This is the Parkour repository.
+Parkour builds on HasChor and extends it with a parallel composition operator.
+Examples in the paper can be found at `examples/explicit-parallel`.
+To run the examples, use `cabal run <example-name>`.
+For example, `cabal run quorum-voting voter1` executes the quorum voting example with location `voter1`.
+
+# Old README of HasChor
 
 <img src="./haschor-logo.svg" alt="The logo of HasChor" height="256px" width="256px" />
 
