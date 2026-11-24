@@ -101,9 +101,10 @@ epp c p = interp handler c
           return (At $ \_ -> a)
         (Disproved dpf1, Disproved dpf2) -> return (At $ \pf -> absurd (dpf2 pf))
     handler (Cond l a k) = case l %~ p of
-      (Proved pf) -> let a' = unAt a pf in do
-        Epp (do sid <- ask; lift $ broadcast sid a')
-        epp (k a') p
+      (Proved pf) -> let a' = unAt a pf in
+        -- ReaderT's (>>) uses (*>), which can fork the network tree.
+        Epp (do sid <- ask; lift $ broadcast sid a') >>= \_ ->
+          epp (k a') p
       (Disproved dpf) -> do
         x <- Epp (do sid <- ask; lift $ recv sid (toLocTm l))
         epp (k x) p
